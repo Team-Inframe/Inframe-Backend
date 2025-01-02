@@ -1,0 +1,25 @@
+services:
+  backend:
+    container_name: Weathy-Backend
+    build:
+      context: ../Weathy-Backend
+    volumes:
+      - static_volume:/Weathy-Backend/static
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "True"
+    networks:
+      - weathy_network
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+            python manage.py makemigrations &&
+            python manage.py migrate &&
+            gunicorn --bind 0.0.0.0:8000 config.wsgi:application"
+
+volumes:
+  static_volume:
+
+networks:
+  weathy_network:
+    driver: bridge
