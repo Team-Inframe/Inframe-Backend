@@ -6,9 +6,9 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Weathy API",
+        title="Inframe API",
         default_version='v1',
-        description="Weathy API Description",
+        description="Inframe API Description",
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
