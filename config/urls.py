@@ -21,9 +21,9 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path("api/v1/", include([
         path('sticker/', include('sticker.urls')),
-        path('frame/', include('frame.urls')),
+        path('users/', include('user.urls')),
+        path('frames/', include('frame.urls')),
     ])),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
