@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'sticker',
     'frame',
     'user',
+    'custom_frame',
 ]
 
 MIDDLEWARE = [
