@@ -6,6 +6,7 @@ from io import BytesIO
 import requests
 from deep_translator import GoogleTranslator
 from openai import OpenAI
+from rest_framework.parsers import MultiPartParser, FormParser
 
 client = OpenAI()
 from django.core.files.base import ContentFile
@@ -25,10 +26,26 @@ OPENAI_API_KEY = env('OPENAI_API_KEY')
 REMOVE_BG_API_KEY = os.getenv('REMOVE_BG_API_KEY')
 
 class StickerView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
     @swagger_auto_schema(
         operation_summary="스티커 생성 API",
         operation_description="스티커 생성 페이지",
-        request_body=CreateStickerSerializer,
+        manual_parameters=[
+            openapi.Parameter(
+                name="prompt",
+                in_=openapi.IN_FORM,
+                description="스티커를 생성할 텍스트 프롬프트",
+                type=openapi.TYPE_STRING,
+                required=False,
+            ),
+            openapi.Parameter(
+                name="uploadedImage",
+                in_=openapi.IN_FORM,
+                description="스티커를 생성할 업로드된 이미지",
+                type=openapi.TYPE_FILE,
+                required=False,
+            ),
+        ],
         responses={
             201: openapi.Response(
                 description="스티커 생성 완료",
@@ -37,9 +54,9 @@ class StickerView(APIView):
                         "code": "STK_2001",
                         "status": 201,
                         "message": "스티커 생성 완료",
-                        "stickerUrl": "https://example.com/stickers/generated_sticker.png"
+                        "stickerUrl": "https://example.com/stickers/generated_sticker.png",
                     }
-                }
+                },
             ),
             400: openapi.Response(
                 description="유효하지 않은 데이터입니다.",
@@ -47,11 +64,12 @@ class StickerView(APIView):
                     "application/json": {
                         "code": "STK_4001",
                         "status": 400,
-                        "message": "스티커 생성 실패"
+                        "message": "스티커 생성 실패",
                     }
-                }
+                },
             ),
-        }
+        },
+        request_body=None,
     )
     def post(self, request):
         serializer = CreateStickerSerializer(data=request.data)
@@ -110,7 +128,9 @@ class StickerView(APIView):
                 "message": "텍스트 또는 파일을 제공해주세요.",
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        sticker = Sticker.objects.create(stickerUrl=sticker_url)
+        sticker = Sticker.objects.create(
+            stickerUrl=sticker_url
+        )
 
         return Response({
             "code": "STK_2001",
