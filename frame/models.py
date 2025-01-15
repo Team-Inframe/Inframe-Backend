@@ -2,7 +2,7 @@ from django.db import models
 
 class Frame(models.Model):
     frameId = models.AutoField(primary_key=True)  # 기본 키로 설정
-    frameUrl = models.FileField(upload_to='frame/')
+    frameUrl = models.URLField()
     createdAt = models.DateTimeField(auto_now_add=True)  # 레코드 생성 시 자동 설정
     cameraWidth = models.IntegerField()  # 카메라의 폭
     cameraHeight = models.IntegerField()  # 카메라의 높이
