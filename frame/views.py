@@ -217,7 +217,10 @@ class CreateAiFrameView(APIView):
             translator = GoogleTranslator(source='ko', target='en')
             english_prompt = translator.translate(prompt)
 
-            detailed_prompt = f"A visually appealing background image of {english_prompt}, "
+            detailed_prompt = (
+                f"A animated-style illustration of {english_prompt}, "
+                f"with the text {english_prompt} creatively incorporated into the borders of the image. "
+            )
 
             response = client.images.generate(
                 prompt=detailed_prompt,
