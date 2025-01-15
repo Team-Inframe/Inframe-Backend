@@ -160,3 +160,64 @@ class CreateFrameView(APIView):
                 "message": f"프레임 생성 실패: {str(e)}",
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class FrameDetailView(APIView):
+    @swagger_auto_schema(
+        operation_summary="초기 프레임 조회 API",
+        operation_description="프레임 ID를 기반으로 초기 프레임 URL을 반환합니다.",
+        responses={
+            200: openapi.Response(
+                description="초기 프레임 조회 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="응답 코드"),
+                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="응답 메시지"),
+                        "data": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "frameUrl": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 URL"),
+                            },
+                        ),
+                    },
+                ),
+            ),
+            400: openapi.Response(
+                description="초기 프레임 조회 실패",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="에러 코드"),
+                        "status": openapi.Schema(type=openapi.TYPE_INTEGER, description="HTTP 상태 코드"),
+                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="에러 메시지"),
+                    },
+                ),
+            ),
+        },
+    )
+    def get(self, request, frameId):
+        """
+        초기 프레임 조회 API
+        프레임 ID를 기반으로 초기 프레임 URL을 반환합니다.
+        """
+        try:
+            frame = Frame.objects.get(pk=frameId)
+            logger.info(f"frame: {frame}")
+            response_data = {
+                "code": "FRA_2001",
+                "message": "초기 프레임 조회 성공",
+                "data": {
+                    "frameId" : frame.frameId,
+                    "frameUrl": frame.frameUrl,
+                },
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error creating frame: {str(e)}")
+            response_data = {
+                "code": "FRA_5002",
+                "status": 500,
+                "message": f"프레임 생성 실패: {str(e)}",
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
