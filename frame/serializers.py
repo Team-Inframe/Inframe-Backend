@@ -1,4 +1,3 @@
-import json
 from rest_framework import serializers
 from .models import Frame
 
@@ -6,7 +5,7 @@ from .models import Frame
 class FrameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Frame
-        fields = ['frame_id', 'frame_url', 'camera_width', 'camera_height']
+        fields = ['frameId', 'frameUrl', 'cameraWidth', 'cameraHeight']
 
 
 class CreateFrameRequestSerializer(serializers.Serializer):

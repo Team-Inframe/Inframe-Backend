@@ -83,12 +83,12 @@ class CreateFrameView(APIView):
         logger.info(f"Request Files: {request.FILES}")
 
         # form-data에서 값 가져오기
-        camera_width = request.data.get("cameraWidth")
-        camera_height = request.data.get("cameraHeight")
-        frame_img = request.FILES.get("frameImg")
+        cameraWidth = request.data.get("cameraWidth")
+        cameraHeight = request.data.get("cameraHeight")
+        frameImg = request.FILES.get("frameImg")
 
         # 필수 파라미터 확인
-        if not camera_width or not camera_height:
+        if not cameraWidth or not cameraHeight:
             return Response(
                 {
                     "code": "FRA_4001",
@@ -98,7 +98,7 @@ class CreateFrameView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not frame_img:
+        if not frameImg:
             return Response(
                 {
                     "code": "FRA_4002",
@@ -110,22 +110,22 @@ class CreateFrameView(APIView):
 
         try:
             # 이미지 저장 처리
-            image_data = frame_img.read()
+            image_data = frameImg.read()
             img = Image.open(BytesIO(image_data))
-            frame_img_name = f"frame_{int(time.time())}.jpg"
-            img_file = BytesIO()
-            img.save(img_file, format="JPEG")
-            img_file.seek(0)
+            frameImgName = f"frame_{int(time.time())}.jpg"
+            imgFile = BytesIO()
+            img.save(imgFile, format="JPEG")
+            imgFile.seek(0)
 
-            frame_img_url = upload_file_to_s3(
-                file=img_file,
-                key=frame_img_name,
+            frameImgUrl = upload_file_to_s3(
+                file=imgFile,
+                key=frameImgName,
                 ExtraArgs={
                     "ContentType": "image/jpeg",
                     "ACL": "public-read",
                 },
             )
-            if not frame_img_url:
+            if not frameImgUrl:
                 return Response(
                     {
                         "code": "FRA_5001",
@@ -137,17 +137,17 @@ class CreateFrameView(APIView):
 
             # 프레임 데이터 DB 저장
             frame = Frame.objects.create(
-                frame_url=frame_img_name,
-                camera_width=int(camera_width),
-                camera_height=int(camera_height),
+                frameUrl=frameImgName,
+                cameraWidth=int(cameraWidth),
+                cameraHeight=int(cameraHeight),
             )
 
             response_data = {
                 "code": "FRA_2001",
                 "message": "프레임 생성 성공",
                 "data": {
-                    "frameId": frame.frame_id,
-                    "frameImgUrl": frame_img_url,
+                    "frameId": frame.frameId,
+                    "frameImgUrl": frameImgUrl,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
