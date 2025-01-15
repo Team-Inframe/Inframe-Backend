@@ -1,7 +1,12 @@
-import json
-import os
 import time
+from datetime import datetime
 from io import BytesIO
+
+from deep_translator import GoogleTranslator
+from openai import OpenAI
+client = OpenAI()
+
+import requests
 from PIL import Image
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,15 +14,19 @@ from rest_framework import status
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+
+from sticker.serializer import CreateStickerSerializer
 from .models import Frame
 from .s3_utils import upload_file_to_s3
 import logging
 from rest_framework.parsers import MultiPartParser
 
+from .serializers import CreateFrameImgSerializer
+
 logger = logging.getLogger("inframe")
 
 class CreateFrameView(APIView):
-    
+
     # MultiPartParser를 통해 파일 업로드를 처리
     parser_classes = [MultiPartParser]
     
@@ -160,6 +169,95 @@ class CreateFrameView(APIView):
                 "message": f"프레임 생성 실패: {str(e)}",
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CreateAiFrameView(APIView):
+    @swagger_auto_schema(
+        operation_summary="초기 프레임 배경 생성 API",
+        operation_description="초기 프레임 배경 생성 페이지",
+        request_body=CreateFrameImgSerializer,
+        responses={
+            201: openapi.Response(
+                description="초기 프레임 배경 생성 성공",
+                examples={
+                    "application/json": {
+                        "code": "FRA_2011",
+                        "status": 201,
+                        "message": "초기 프레임 배경 생성 성공",
+                        "frameAiUrl": "https://example.com/stickers/generated_background.png"
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="초기 프레임 배경 생성 실패",
+                examples={
+                    "application/json": {
+                        "code": "FRA_4001",
+                        "status": 400,
+                        "message": "초기 프레임 배경 생성 실패"
+                    }
+                }
+            ),
+        }
+    )
+    def post(self, request):
+        serializer = CreateFrameImgSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response({
+                "code": "FRA_4001",
+                "status": 400,
+                "message": "유효하지 않은 데이터입니다.",
+                "errors": serializer.errors,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        validated_data = serializer.validated_data
+        prompt = validated_data.get('prompt')
+
+        if prompt:
+            translator = GoogleTranslator(source='ko', target='en')
+            english_prompt = translator.translate(prompt)
+
+            detailed_prompt = (
+                f"A animated-style illustration of {english_prompt}, "
+                f"with the text {english_prompt} creatively incorporated into the borders of the image. "
+            )
+
+            response = client.images.generate(
+                prompt=detailed_prompt,
+                n=1,
+                size="1024x1024"
+            )
+            generated_image_url = response.data[0].url
+
+            generated_image = self.download_image(generated_image_url)
+
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            file_name = f"ai-frames/{prompt[:30].replace(' ', '_')}_{timestamp}.png"
+
+            frame_url = self.upload_to_s3(generated_image, file_name)
+
+        else:
+            return Response({
+                "code": "FRA_4001",
+                "status": 400,
+                "message": "유효하지 않은 데이터입니다.",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "code": "FRA_2001",
+            "status": 201,
+            "message": "초기 프레임 배경 생성 완료",
+            "frameAiUrl": frame_url
+        }, status=status.HTTP_201_CREATED)
+
+    def download_image(self, url):
+        response = requests.get(url)
+        response.raise_for_status()
+        return BytesIO(response.content)
+    def upload_to_s3(self, image, file_name):
+        from django.core.files.storage import default_storage
+        file_path = default_storage.save(file_name, image)
+        return default_storage.url(file_path)
         
 class FrameDetailView(APIView):
     @swagger_auto_schema(

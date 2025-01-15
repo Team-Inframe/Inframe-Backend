@@ -12,9 +12,14 @@ class CreateFrameRequestSerializer(serializers.Serializer):
     frameImg = serializers.FileField(required=True)  # 이미지 파일 필드
     cameraWidth = serializers.IntegerField(required=True)  # 카메라 가로 크기 필드
     cameraHeight = serializers.IntegerField(required=True)  # 카메라 세로 크기 필드
-    
+
     def validate(self, data):
         # 카메라 너비와 높이가 모두 존재하는지 확인
         if not data.get('cameraWidth') or not data.get('cameraHeight'):
             raise serializers.ValidationError("카메라 너비와 높이는 필수 항목입니다.")
         return data
+
+class CreateFrameImgSerializer(serializers.Serializer):
+    prompt = serializers.CharField(required=False, allow_blank=True)
+    frameAiUrl = serializers.CharField(read_only=True)
+
