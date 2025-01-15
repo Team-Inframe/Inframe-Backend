@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'storages',
     'sticker',
+    'user',
 ]
 
 MIDDLEWARE = [
