@@ -125,7 +125,7 @@ class StickerView(APIView):
         return BytesIO(response.content)
 
     def remove_background_with_api(self, image):
-        url = "https://api.remove.bg/v1.0/removebg"
+        url = env('REMOVE_BG_API_URL')
 
         headers = {"X-Api-Key": REMOVE_BG_API_KEY}
         if isinstance(image, BytesIO):
