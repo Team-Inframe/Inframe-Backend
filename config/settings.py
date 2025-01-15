@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'storages',
     'sticker',
-    'user',
+    'frame',
 ]
 
 MIDDLEWARE = [
@@ -106,6 +106,34 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'INFO',  # 로그 레벨을 INFO로 설정
+            'class': 'logging.StreamHandler',  # 콘솔에 출력
+        },
+        'file': {
+            'level': 'INFO',  # 파일에 로그를 저장
+            'class': 'logging.FileHandler',
+            'filename': 'app_logs.log',  # 로그 파일 위치
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],  # Django의 기본 로거는 콘솔에 로그 출력
+            'level': 'INFO',  # 로그 레벨 설정
+            'propagate': True,
+        },
+        'inframe': {  # 애플리케이션 로거 설정
+            'handlers': ['console', 'file'],  # 콘솔과 파일 두 가지 핸들러 사용
+            'level': 'INFO',  # 로그 레벨 설정
+            'propagate': True,
+        },
+    },
+}
 
 LANGUAGE_CODE = 'ko-kr'
 
