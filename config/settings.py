@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'storages',
     'sticker',
     'frame',
+    'user',
 ]
 
 MIDDLEWARE = [
