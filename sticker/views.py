@@ -4,6 +4,7 @@ from datetime import datetime
 from io import BytesIO
 
 import requests
+from deep_translator import GoogleTranslator
 from openai import OpenAI
 
 client = OpenAI()
@@ -53,8 +54,6 @@ class StickerView(APIView):
         }
     )
     def post(self, request):
-        client_ip = request.META.get('REMOTE_ADDR', None)
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         serializer = CreateStickerSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -77,18 +76,25 @@ class StickerView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         if prompt:
-            response = client.images.generate(prompt=prompt,
-            n=1,
-            size="1024x1024")
+            translator = GoogleTranslator(source='ko', target='en')
+            english_prompt = translator.translate(prompt)
+
+            detailed_prompt = f"{english_prompt}, a single main element, no background"
+
+            response = client.images.generate(
+                prompt=detailed_prompt,
+                n=1,
+                size="1024x1024"
+            )
             generated_image_url = response.data[0].url
 
             generated_image = self.download_image(generated_image_url)
-            # bg_removed_image = self.remove_background_with_api(generated_image)
+            bg_removed_image = self.remove_background_with_api(generated_image)
 
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             file_name = f"stickers/{prompt[:30].replace(' ', '_')}_{timestamp}.png"
 
-            sticker_url = self.upload_to_s3(generated_image, file_name)
+            sticker_url = self.upload_to_s3(bg_removed_image, file_name)
 
 
         elif uploaded_image:
