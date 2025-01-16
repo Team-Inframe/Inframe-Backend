@@ -30,8 +30,8 @@ class CustomFrameDetailView(APIView):
                         "code": "CSF_2001",
                         "message": "커스텀 프레임 단일 조회 성공",
                         "data": {
-                            "customFrameTitle": "string",
-                            "customFrameUrl": "string",
+                            "custom_frame_title": "string",
+                            "custom_frame_url": "string",
                         }
                     }
                 }
@@ -49,17 +49,17 @@ class CustomFrameDetailView(APIView):
         },
     )
 
-    def get(self, request, customFrameId):
+    def get(self, request, custom_frame_id):
 
         try :
-            customFrame = CustomFrame.objects.get(pk=customFrameId)
-            logger.info(f"customFrame:{customFrame}")
+            custom_frame = CustomFrame.objects.get(pk=custom_frame_id)
+            logger.info(f"custom_frame:{custom_frame}")
             response_data = {
                 "code": "CSF_2001",
                 "message": "커스텀 프레임 단일 조회 성공",
                 "data": {
-                    "customFrameTitle": customFrame.custom_frame_title,
-                    "customFrameUrl": customFrame.custom_frame_url,
+                    "custom_frame_title": custom_frame.custom_frame_title,
+                    "custom_frame_url": custom_frame.custom_frame_url,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
@@ -89,26 +89,26 @@ class CustomMyFrameDetailView(APIView):
                         "data": [
                             {
                                 "date": "2025-01-13",
-                                "customFrames": [
+                                "custom_frames": [
                                     {
-                                    "customFrameId": 1,
-                                    "customFrameTitle": "지브리st",
-                                    "customFrameUrl": "https://example.com/frame1.png"
+                                    "custom_frame_id": 1,
+                                    "custom_frame_title": "지브리st",
+                                    "custom_frame_url": "https://example.com/frame1.png"
                                     },
                                     {
-                                    "customFrameId": 2,
-                                    "customFrameTitle": "귀여운st",
-                                    "customFrameUrl": "https://example.com/frame2.png"
+                                    "custom_frame_id": 2,
+                                    "custom_frame_title": "귀여운st",
+                                    "custom_frame_url": "https://example.com/frame2.png"
                                     }
                                 ]
                             },
                             {
                                 "date": "2025-01-14",
-                                "customFrames": [
+                                "custom_frames": [
                                     {
-                                    "customFrameId": 3,
-                                    "customFrameTitle": "힐링st",
-                                    "customFrameUrl": "https://example.com/frame3.png"
+                                    "custom_frame_id": 3,
+                                    "custom_frame_title": "힐링st",
+                                    "custom_frame_url": "https://example.com/frame3.png"
                                     }
                                 ]
                             }
@@ -128,37 +128,37 @@ class CustomMyFrameDetailView(APIView):
             ),
         },
     )
-    def get(self, request, customFrameId):
+    def get(self, request, custom_frame_id):
 
         try:
-            customFrame = CustomFrame.objects.get(pk=customFrameId)
-            logger.info(f"customFrame:{customFrame}")
+            custom_frame = CustomFrame.objects.get(pk=custom_frame_id)
+            logger.info(f"custom_frame:{custom_frame}")
             response_data = {
                 "code": "STG_2001",
                 "message": "나의 커스텀 프레임 목록 조회 성공",
                 "data": [
                     {
-                        "date": customFrame.created_at,
-                        "customFrames": [
+                        "date": custom_frame.created_at,
+                        "custom_frames": [
                             {
-                                "customFrameId": 1,
-                                "customFrameTitle": customFrame.custom_frame_title,
-                                "customFrameUrl": customFrame.custom_frame_url,
+                                "custom_frameId": 1,
+                                "custom_frame_title": custom_frame.custom_frame_title,
+                                "custom_frame_url": custom_frame.custom_frame_url,
                             },
                             {
-                                "customFrameId": 2,
-                                "customFrameTitle": customFrame.custom_frame_title,
-                                "customFrameUrl": customFrame.custom_frame_url,
+                                "custom_frameId": 2,
+                                "custom_frame_title": custom_frame.custom_frame_title,
+                                "custom_frame_url": custom_frame.custom_frame_url,
                             }
                         ]
                     },
                     {
-                        "date": customFrame.created_at,
+                        "date": custom_frame.created_at,
                         "customFrames": [
                             {
-                                "customFrameId": 3,
-                                "customFrameTitle": customFrame.custom_frame_title,
-                                "customFrameUrl": customFrame.custom_frame_url,
+                                "custom_frameId": 3,
+                                "custom_frame_title": custom_frame.custom_frame_title,
+                                "custom_frame_url": custom_frame.custom_frame_url,
                             }
                         ]
                     }
