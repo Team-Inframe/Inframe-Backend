@@ -23,7 +23,7 @@ urlpatterns = [
         path('stickers/', include('sticker.urls')),
         path('users/', include('user.urls')),
         path('frames/', include('frame.urls')),
-        path('custom_frames/', include('custom_frame.urls')),
+        path('custom-frames/', include('custom_frame.urls')),
     ])),
 ]
 
