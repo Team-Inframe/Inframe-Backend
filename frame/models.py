@@ -1,15 +1,15 @@
 from django.db import models
 
 class Frame(models.Model):
-    frameId = models.AutoField(primary_key=True)  # 기본 키로 설정
-    frameUrl = models.URLField()
-    createdAt = models.DateTimeField(auto_now_add=True)  # 레코드 생성 시 자동 설정
-    cameraWidth = models.IntegerField()  # 카메라의 폭
-    cameraHeight = models.IntegerField()  # 카메라의 높이
-    isDeleted = models.BooleanField(default=False)  # 삭제 여부 플래그
+    frame_id = models.AutoField(primary_key=True)  # 기본 키로 설정
+    frame_url = models.URLField()
+    created_at = models.DateTimeField(auto_now_add=True)  # 레코드 생성 시 자동 설정
+    camera_width = models.IntegerField()  # 카메라의 폭
+    camera_height = models.IntegerField()  # 카메라의 높이
+    is_deleted = models.BooleanField(default=False)  # 삭제 여부 플래그
 
     class Meta:
         db_table = 'frames'  # 데이터베이스 테이블 이름
 
     def __str__(self):
-        return f"Frame {self.frameId}: {self.frameUrl}"
+        return f"Frame {self.frame_id}: {self.frame_url}"
