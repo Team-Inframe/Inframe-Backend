@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'frame',
     'user',
     'custom_frame',
+    'photo',
 ]
 
 MIDDLEWARE = [

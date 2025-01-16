@@ -24,6 +24,7 @@ urlpatterns = [
         path('users/', include('user.urls')),
         path('frames/', include('frame.urls')),
         path('custom-frames/', include('custom_frame.urls')),
+        path('photos/', include('photo.urls')),
     ])),
 ]
 
