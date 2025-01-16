@@ -13,10 +13,10 @@ class CustomFrame(models.Model):
     frameId = models.ForeignKey(Frame, on_delete=models.CASCADE)
     customFrameTitle = models.CharField(max_length=30)
     customFrameUrl  = models.CharField(max_length=255)
-    is_shared = models.BooleanField(default=False)
+    isShared = models.BooleanField(default=False)
     bookmark = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_deleted = models.BooleanField(default=False)
+    createdAt = models.DateTimeField(auto_now_add=True)
+    isDeleted = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'custom_frames'  # 데이터베이스 테이블 이름
