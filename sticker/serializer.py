@@ -8,7 +8,7 @@ class CreateStickerSerializer(serializers.ModelSerializer):
     stickerUrl = serializers.CharField(read_only=True)
     class Meta:
         model = Sticker
-        fields = ['prompt', 'uploadedImage', 'stickerUrl']
+        fields = ['userId','prompt', 'uploadedImage', 'stickerUrl']
 
     def validate(self, data):
         if not data.get('prompt') and not data.get('uploadedImage'):

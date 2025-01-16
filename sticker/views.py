@@ -32,6 +32,13 @@ class StickerView(APIView):
         operation_description="스티커 생성 페이지",
         manual_parameters=[
             openapi.Parameter(
+                name="userId",
+                in_=openapi.IN_FORM,
+                description="유저 아이디",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+            openapi.Parameter(
                 name="prompt",
                 in_=openapi.IN_FORM,
                 description="스티커를 생성할 텍스트 프롬프트",
@@ -129,6 +136,7 @@ class StickerView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         sticker = Sticker.objects.create(
+            userId=request.user.id,
             stickerUrl=sticker_url
         )
 
