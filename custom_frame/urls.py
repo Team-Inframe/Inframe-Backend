@@ -1,6 +1,10 @@
+
+from django.urls import path
+from .view2 import CustomFrameDetailView
+
 urlpatterns = [
   #  path('')
-  #  path('customFrames/{customframeid}', name = "customFrames"),
+    path("<int:customFrameId>/", CustomFrameDetailView.as_view(), name = "customFrames"),
   #  path('')
   #  path('bookmark/', , name = "bookmark"),
   #  path('myFrames/', , name = "myFrames"),
