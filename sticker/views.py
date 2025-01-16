@@ -5,8 +5,11 @@ from io import BytesIO
 
 import requests
 from deep_translator import GoogleTranslator
+from django.shortcuts import get_object_or_404
 from openai import OpenAI
 from rest_framework.parsers import MultiPartParser, FormParser
+
+from user.models import User
 
 client = OpenAI()
 from django.core.files.base import ContentFile
@@ -80,6 +83,9 @@ class StickerView(APIView):
     )
     def post(self, request):
         serializer = CreateStickerSerializer(data=request.data)
+        user_id = request.data.get("userId")
+
+        user = get_object_or_404(User, id=int(user_id))
 
         if not serializer.is_valid():
             return Response({
@@ -136,7 +142,7 @@ class StickerView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         sticker = Sticker.objects.create(
-            userId=request.user.id,
+            userId=user,
             stickerUrl=sticker_url
         )
 

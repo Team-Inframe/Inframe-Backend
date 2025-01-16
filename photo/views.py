@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 
 from photo.models import Photo
 from photo.serializer import CreatePhotoSerializer
+from user.models import User
 
 
 class CreatePhotoView(APIView):
@@ -59,6 +61,9 @@ class CreatePhotoView(APIView):
 
     def post(self, request):
         serializer = CreatePhotoSerializer(data=request.data)
+        user_id = request.data.get("userId")
+
+        user = get_object_or_404(User, id=int(user_id))
 
         if not serializer.is_valid():
             return Response({
@@ -89,7 +94,7 @@ class CreatePhotoView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         photo = Photo.objects.create(
-            userId=request.user.id,
+            userId=user,
             photoUrl=s3_url
         )
 
