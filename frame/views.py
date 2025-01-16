@@ -35,21 +35,21 @@ class CreateFrameView(APIView):
         operation_description="form-data로 이미지 파일과 카메라 크기를 업로드하여 프레임을 생성합니다.",
         manual_parameters=[
             openapi.Parameter(
-                'frameImg',
+                'frame_img',
                 openapi.IN_FORM,
                 description='프레임 이미지 파일',
                 type=openapi.TYPE_FILE,
                 required=True
             ),
             openapi.Parameter(
-                'cameraWidth',
+                'camera_width',
                 openapi.IN_FORM,
                 description='카메라의 너비',
                 type=openapi.TYPE_INTEGER,
                 required=True
             ),
             openapi.Parameter(
-                'cameraHeight',
+                'camera_height',
                 openapi.IN_FORM,
                 description='카메라의 높이',
                 type=openapi.TYPE_INTEGER,
@@ -67,8 +67,8 @@ class CreateFrameView(APIView):
                         "data": openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
-                                "frameId": openapi.Schema(type=openapi.TYPE_INTEGER, description="프레임 ID"),
-                                "frameImgUrl": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 이미지 URL"),
+                                "frame_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="프레임 ID"),
+                                "frame_img_url": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 이미지 URL"),
                             },
                         ),
                     },
@@ -92,12 +92,12 @@ class CreateFrameView(APIView):
         logger.info(f"Request Files: {request.FILES}")
 
         # form-data에서 값 가져오기
-        cameraWidth = request.data.get("cameraWidth")
-        cameraHeight = request.data.get("cameraHeight")
-        frameImg = request.FILES.get("frameImg")
+        camera_width = request.data.get("camera_width")
+        camera_height = request.data.get("camera_height")
+        frame_img = request.FILES.get("frame_img")
 
         # 필수 파라미터 확인
-        if not cameraWidth or not cameraHeight:
+        if not camera_width or not camera_height:
             return Response(
                 {
                     "code": "FRA_4001",
@@ -107,7 +107,7 @@ class CreateFrameView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not frameImg:
+        if not frame_img:
             return Response(
                 {
                     "code": "FRA_4002",
@@ -119,22 +119,22 @@ class CreateFrameView(APIView):
 
         try:
             # 이미지 저장 처리
-            image_data = frameImg.read()
+            image_data = frame_img.read()
             img = Image.open(BytesIO(image_data))
-            frameImgName = f"frame_{int(time.time())}.jpg"
-            imgFile = BytesIO()
-            img.save(imgFile, format="JPEG")
-            imgFile.seek(0)
+            frame_img_name = f"frame_{int(time.time())}.jpg"
+            img_file = BytesIO()
+            img.save(img_file, format="JPEG")
+            img_file.seek(0)
 
-            frameImgUrl = upload_file_to_s3(
-                file=imgFile,
-                key=frameImgName,
+            frame_img_url = upload_file_to_s3(
+                file=img_file,
+                key=frame_img_name,
                 ExtraArgs={
                     "ContentType": "image/jpeg",
                     "ACL": "public-read",
                 },
             )
-            if not frameImgUrl:
+            if not frame_img_url:
                 return Response(
                     {
                         "code": "FRA_5001",
@@ -146,17 +146,17 @@ class CreateFrameView(APIView):
 
             # 프레임 데이터 DB 저장
             frame = Frame.objects.create(
-                frameUrl=frameImgName,
-                cameraWidth=int(cameraWidth),
-                cameraHeight=int(cameraHeight),
+                frame_url=frame_img_name,
+                camera_width=int(camera_width),
+                camera_height=int(camera_height),
             )
 
             response_data = {
                 "code": "FRA_2001",
                 "message": "프레임 생성 성공",
                 "data": {
-                    "frameId": frame.frameId,
-                    "frameImgUrl": frameImgUrl,
+                    "frame_id": frame.frame_id,
+                    "frame_img_url": frame_img_url,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
@@ -247,7 +247,7 @@ class CreateAiFrameView(APIView):
             "code": "FRA_2001",
             "status": 201,
             "message": "초기 프레임 배경 생성 완료",
-            "frameAiUrl": frame_url
+            "frame_ai_url": frame_url
         }, status=status.HTTP_201_CREATED)
 
     def download_image(self, url):
@@ -274,7 +274,7 @@ class FrameDetailView(APIView):
                         "data": openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
-                                "frameUrl": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 URL"),
+                                "frame_url": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 URL"),
                             },
                         ),
                     },
@@ -293,20 +293,20 @@ class FrameDetailView(APIView):
             ),
         },
     )
-    def get(self, request, frameId):
+    def get(self, request, frame_id):
         """
         초기 프레임 조회 API
         프레임 ID를 기반으로 초기 프레임 URL을 반환합니다.
         """
         try:
-            frame = Frame.objects.get(pk=frameId)
+            frame = Frame.objects.get(pk=frame_id)
             logger.info(f"frame: {frame}")
             response_data = {
                 "code": "FRA_2001",
                 "message": "초기 프레임 조회 성공",
                 "data": {
-                    "frameId" : frame.frameId,
-                    "frameUrl": frame.frameUrl,
+                    "frame_id" : frame.frame_id,
+                    "frame_url": frame.frame_url,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)

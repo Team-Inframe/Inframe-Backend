@@ -63,12 +63,12 @@ class Sign_up(APIView):
 
         user = serializer.save()
         logger.info(
-            f"{client_ip} POST /user/sign-up 201 Signup successful for user id: {user.id}"
+            f"{client_ip} POST /user/sign-up 201 Signup successful for user id: {user.user_id}"
         )
 
         return Response(
             {
-                "user_id": user.id,
+                "user_id": user.user_id,
                 "code": "MEM_2011",
                 "status": 201,
                 "message": "회원가입 성공",
@@ -95,7 +95,7 @@ class Login(APIView):
                     "application/json": {
                         "code": "MEM_2001",
                         "data": {
-                            "userId": 1,
+                            "user_id": 1,
                         },
                         "message": "로그인에 성공했습니다.",
                     }
@@ -162,9 +162,9 @@ class Login(APIView):
         response_data = {
             "code": "MEM_2001",
             "data": {
-                "userId": user.id,
+                "user_id": user.user_id,
             },
             "message": "로그인에 성공했습니다.",
         }
-        logger.info(f"{client_ip} POST /login 201 Created: 로그인 성공 (User ID: {user.id})")
+        logger.info(f"{client_ip} POST /login 201 Created: 로그인 성공 (User ID: {user.user_id})")
         return Response(data=response_data, status=status.HTTP_201_CREATED)

@@ -35,11 +35,11 @@ class StickerView(APIView):
         operation_description="스티커 생성 페이지",
         manual_parameters=[
             openapi.Parameter(
-                name="userId",
+                name="user_id",
                 in_=openapi.IN_FORM,
                 description="유저 아이디",
                 type=openapi.TYPE_INTEGER,
-                required=False,
+                required=True,
             ),
             openapi.Parameter(
                 name="prompt",
@@ -49,7 +49,7 @@ class StickerView(APIView):
                 required=False,
             ),
             openapi.Parameter(
-                name="uploadedImage",
+                name="uploaded_image",
                 in_=openapi.IN_FORM,
                 description="스티커를 생성할 업로드된 이미지",
                 type=openapi.TYPE_FILE,
@@ -79,14 +79,12 @@ class StickerView(APIView):
                 },
             ),
         },
-        request_body=None,
     )
     def post(self, request):
+        user_id = request.data.get("user_id")
+        user = get_object_or_404(User, user_id=user_id)
+
         serializer = CreateStickerSerializer(data=request.data)
-        user_id = request.data.get("userId")
-
-        user = get_object_or_404(User, id=int(user_id))
-
         if not serializer.is_valid():
             return Response({
                 "code": "STK_4001",
@@ -97,7 +95,7 @@ class StickerView(APIView):
 
         validated_data = serializer.validated_data
         prompt = validated_data.get('prompt')
-        uploaded_image = validated_data.get('uploadedImage')
+        uploaded_image = validated_data.get('uploaded_image')
 
         if bool(prompt) == bool(uploaded_image):
             return Response({
@@ -110,7 +108,7 @@ class StickerView(APIView):
             translator = GoogleTranslator(source='ko', target='en')
             english_prompt = translator.translate(prompt)
 
-            detailed_prompt = f"{english_prompt}, a single main element, no background"
+            detailed_prompt = f"A cute and colorful sticker design featuring {english_prompt}, with a fun and playful style, perfect for decoration."
 
             response = client.images.generate(
                 prompt=detailed_prompt,
@@ -127,7 +125,6 @@ class StickerView(APIView):
 
             sticker_url = self.upload_to_s3(bg_removed_image, file_name)
 
-
         elif uploaded_image:
             bg_removed_image = self.remove_background_with_api(uploaded_image)
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -142,15 +139,15 @@ class StickerView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         sticker = Sticker.objects.create(
-            userId=user,
-            stickerUrl=sticker_url
+            user_id=user.user_id,
+            sticker_url=sticker_url
         )
 
         return Response({
             "code": "STK_2001",
             "status": 201,
             "message": "스티커 생성 완료",
-            "stickerUrl": sticker.stickerUrl,
+            "sticker_url": sticker.sticker_url,
         }, status=status.HTTP_201_CREATED)
 
     def download_image(self, url):

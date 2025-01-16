@@ -17,18 +17,17 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
-    id = models.AutoField(primary_key=True)
+    user_id = models.AutoField(primary_key=True)
     email = models.EmailField(max_length=50, unique=True)
     password = models.CharField(max_length=128)
-    createdAt = models.DateTimeField(auto_now_add=True)
-    updatedAt = models.DateTimeField(auto_now=True)
-    isDeleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
-
 
     def __str__(self):
         return self.email

@@ -4,8 +4,15 @@ from photo.models import Photo
 
 
 class CreatePhotoSerializer(serializers.ModelSerializer):
-    photoImg = serializers.FileField(write_only=True)
-    photoUrl = serializers.CharField(read_only=True)
+    photo_img = serializers.FileField(write_only=True)
+    photo_url = serializers.CharField(read_only=True)
     class Meta:
         model = Photo
-        fields = ['userId', 'photoId', 'photoImg', 'photoUrl']
+        fields = ['photo_id', 'photo_img', 'photo_url']
+
+class PhotoListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = [
+            'photo_id', 'photo_url'
+        ]
