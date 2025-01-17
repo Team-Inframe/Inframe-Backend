@@ -3,32 +3,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    networks:
-      - inframe_net
-    deploy:
-      replicas: 2
-      labels:
-        - traefik.enable=true
-        - traefik.http.services.backend.loadbalancer.server.port=8000
-        - traefik.http.routers.backend.entrypoints=websecure
-        - traefik.http.routers.backend.rule=Host(`inframe-server.shop`) && PathPrefix(`/api/v1`)
-        - traefik.http.routers.backend.middlewares=backend-stripprefix
-        - traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1
-        - traefik.http.routers.backend.tls.certresolver=letsencrypt
     env_file:
       - .env
     command: >
       sh -c "python manage.py collectstatic --noinput &&
-            python manage.py makemigrations --noinput &&
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.backend.loadbalancer.server.port=8000"
+        - "traefik.http.routers.backend.entrypoints=websecure"
+        - "traefik.http.routers.backend.rule=Host(`inframe-server.shop`)"
+        - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
 
   traefik:
     image: traefik:v2.9
     command:
       - "--api.insecure=false"
       - "--providers.docker=true"
-      - "--providers.docker.swarmMode=false"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
@@ -41,28 +35,15 @@ services:
       - "--accesslog=true"
       - "--api.dashboard=true"
     ports:
-      - target: 80
-        published: 80
-        protocol: tcp
-        mode: host
-      - target: 443
-        published: 443
-        protocol: tcp
-        mode: host
-      - target: 8080
-        published: 8080
-        protocol: tcp
-        mode: host
+      - 80:80
+      - 443:443
+      - 8080:8080
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "traefik-certificates:/letsencrypt"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme.json:/letsencrypt/acme.json
     networks:
       - inframe_net
 
 networks:
   inframe_net:
     driver: bridge
-
-volumes:
-  traefik-certificates:
-    driver: local
