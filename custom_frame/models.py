@@ -38,3 +38,14 @@ class CustomFrameSticker(models.Model):
 
     class Meta:
         db_table = "custom_frame_sticker"
+
+class Bookmark(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    custom_frame = models.ForeignKey(CustomFrame, on_delete=models.CASCADE)
+    bookmark_id = AutoField(primary_key=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "bookmarks"

@@ -259,3 +259,40 @@ class MySavedFramesView(APIView):
             "data": data
         }, status=status.HTTP_200_OK)
 
+class Bookmark(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    @swagger_auto_schema(
+        operation_summary="커스텀 프레임 저장",
+        operation_description="커스텀 프레임 저장",
+        manual_parameters=[
+            openapi.Parameter(
+                name="user_id",
+                in_=openapi.IN_QUERY,
+                description="유저 아이디",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="커스텀 프레임 저장 성공",
+                examples={
+                    "code": "CSF_2001",
+                    "message": "커스텀 프레임 저장 성공",
+                }
+            ),
+            400: openapi.Response(
+                description="내가 저장한 프레임 목록 조회 실패",
+                examples={
+                    "application/json": {
+                        "code": "CSF_4041",
+                        "status": 404,
+                        "message": "커스텀 프레임이 존재하지 않습니다."
+                    }
+                }
+            ),
+        }, request_body=None,
+
+    )
+
+    def post(self, request):
