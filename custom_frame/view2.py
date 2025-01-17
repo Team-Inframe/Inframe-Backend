@@ -8,7 +8,9 @@ from rest_framework import status, request
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .models import CustomFrame, User, Bookmark
+
+from .models import CustomFrame, User, CustomFrameSticker, Bookmark
+
 from django.shortcuts import get_object_or_404
 
 
@@ -22,8 +24,7 @@ logger = logging.getLogger("inframe")
 class CustomFrameDetailView(APIView):
     @swagger_auto_schema(
         operation_summary="커스텀 프레임 조회 API",
-        operation_description="커스텀 프레임 조회 .",
-
+        operation_description="커스텀 프레임 단일 조회를 수행합니다.",
         responses={
             200: openapi.Response(
                 description="커스텀 프레임 단일 조회 성공",
@@ -32,9 +33,25 @@ class CustomFrameDetailView(APIView):
                         "code": "CSF_2001",
                         "message": "커스텀 프레임 단일 조회 성공",
                         "data": {
-                            "date": "2025-01-13",
-                            "custom_frame_title": "string",
-                            "custom_frame_url": "string",
+                            "customFrameTitle": "string",
+                            "customFrameUrl": "string",
+                            "frameId": 0,
+                            "stickers": [
+                                {
+                                    "stickerImgUrl": "string",
+                                    "stickerX": 100,
+                                    "stickerY": 200,
+                                    "stickerWidth": 100,
+                                    "stickerHeight": 100
+                                },
+                                {
+                                    "stickerImgUrl": "string",
+                                    "stickerX": 150,
+                                    "stickerY": 250,
+                                    "stickerWidth": 120,
+                                    "stickerHeight": 120
+                                }
+                            ],
                         }
                     }
                 }
@@ -51,33 +68,53 @@ class CustomFrameDetailView(APIView):
             ),
         },
     )
-
     def get(self, request, custom_frame_id):
-
-
-
-        try :
+        try:
+            # 커스텀 프레임 조회
             custom_frame = CustomFrame.objects.get(pk=custom_frame_id)
-            logger.info(f"custom_frame:{custom_frame}")
+            logger.info(f"custom_frame: {custom_frame}")
+
+            # 연관된 스티커 조회
+            stickers = CustomFrameSticker.objects.filter(custom_frame=custom_frame, is_deleted=False)
+            sticker_list = [
+                {
+                    "stickerImgUrl": sticker.sticker.sticker_img_url,
+                    "stickerX": sticker.position_x,
+                    "stickerY": sticker.position_y,
+                    "stickerWidth": sticker.sticker_width,
+                    "stickerHeight": sticker.sticker_height,
+                }
+                for sticker in stickers
+            ]
+
+            # 응답 데이터 생성
             response_data = {
                 "code": "CSF_2001",
                 "message": "커스텀 프레임 단일 조회 성공",
                 "data": {
-                    "date": custom_frame.created_at.strftime("%Y-%m-%d"),
-                    "custom_frame_title": custom_frame.custom_frame_title,
-                    "custom_frame_url": custom_frame.custom_frame_url,
+                    "customFrameTitle": custom_frame.custom_frame_title,
+                    "customFrameUrl": custom_frame.custom_frame_url,
+                    "frameId": custom_frame.frame.frame_id,
+                    "stickers": sticker_list,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
 
-        except Exception as e:
-            logger.error(f"Error creating frame: {str(e)}")
+        except CustomFrame.DoesNotExist:
+            logger.error(f"CustomFrame with ID {custom_frame_id} not found.")
             response_data = {
                 "code": "CSF_4001",
-                "status": 400,
+                "status": 404,
                 "message": "커스텀 프레임 단일 조회 실패"
             }
-
+            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error retrieving frame: {str(e)}")
+            response_data = {
+                "code": "CSF_5001",
+                "status": 500,
+                "message": "서버 오류 발생"
+            }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CustomMyFrameDetailView(APIView):
