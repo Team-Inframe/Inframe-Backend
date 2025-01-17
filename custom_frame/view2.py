@@ -211,63 +211,53 @@ class CustomMyFrameDetailView(APIView):
         }, status=status.HTTP_200_OK)
 
 class MySavedFramesView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
     @swagger_auto_schema(
         operation_summary="내가 저장한 커스텀 프레임 목록 조회 API",
-        operation_description="내가 저장한 프레임 목록 조회 ",
-        manual_parameters=[
-            openapi.Parameter(
-                name="user_id",
-                in_=openapi.IN_QUERY,
-                description="유저 아이디",
-                type=openapi.TYPE_INTEGER,
-                required=False,
-            )
-        ],
+        operation_description="내가 저장한 커스텀 프레임 목록 조회 API",
         responses={
             200: openapi.Response(
-                description="내가 저장한 프레임 목록 조회 성공",
+                description="Success",
                 examples={
                     "application/json": {
                         "code": "STG_2001",
                         "message": "내가 저장한 프레임 목록 조회 성공",
-                        "data": {
-                            "custom_frames": [
-                                {   "date": "2025-01-13",
-                                    "custom_frame_id": 0,
-                                    "custom_frame_title": "string",
-                                    "custom_frame_url": "string",
-                                },
-                                {   "date": "2025-01-13",
-                                    "custom_frame_id": 0,
-                                    "custom_frame_title": "string",
-                                    "custom_frame_url": "string",
-                                },
-                                {   "date": "2025-01-13",
-                                    "custom_frame_id": 0,
-                                    "custom_frame_title": "string",
-                                    "custom_frame_url": "string",
-                                },
-                            ],
-                        },
+                        "data": [
+                            {
+                                "date": "2023.01.01",
+                                "frames": [
+                                    {
+                                        "id": 1,
+                                        "name": "Frame Name",
+                                        "description": "Frame Description",
+                                        "created_at": "2023-01-01T12:34:56Z",
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 }
             ),
-            400: openapi.Response(
-                description="내가 저장한 프레임 목록 조회 실패",
+            404: openapi.Response(
+                description="User not found",
                 examples={
                     "application/json": {
-                        "code": "STG_4001",
-                        "status": 400,
-                        "message": "내가 저장한 프레임 목록 조회 실패"
+                        "detail": "Not found."
                     }
                 }
-            ),
-        },request_body=None,
+            )
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                "user_id",
+                openapi.IN_PATH,
+                description="The ID of the user whose frames are being fetched",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ]
     )
-    def get(self, request):
+    def get(self, request,user_id):
 
-        user_id = request.query_params.get("user_id")
         user = get_object_or_404(User, user_id=user_id)
 
         frames = CustomFrame.objects.filter(user=user, is_deleted=False).annotate(
