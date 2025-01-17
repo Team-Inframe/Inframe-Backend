@@ -274,7 +274,7 @@ class BookmarkView(APIView):
                 required=False,
             ),
             openapi.Parameter(
-                name="custom_frame",
+                name="custom_frame_id",
                 in_=openapi.IN_FORM,
                 description="커스텀 프레임 ID",
                 type=openapi.TYPE_INTEGER,
@@ -303,10 +303,10 @@ class BookmarkView(APIView):
 
     )
 
-    def post(self, request):
+    def post(self, request ):
         user_id = request.data.get("user_id")
         custom_frame_id = request.data.get("custom_frame_id")
-
+        logger.info(f"custom_frame_id1: {custom_frame_id}")
         # 요청 데이터 확인
         if not user_id:
             return Response(
@@ -321,9 +321,9 @@ class BookmarkView(APIView):
             )
 
         # User와 CustomFrame 객체 가져오기
-        user = get_object_or_404(User, id=user_id)
-        custom_frame = get_object_or_404(CustomFrame, id=custom_frame_id)
-
+        user = get_object_or_404(User, user_id=user_id)
+        custom_frame = get_object_or_404(CustomFrame, custom_frame_id=custom_frame_id)
+        logger.info(f"custom_frame_id2: {custom_frame_id}")
         # 이미 북마크했는지 확인
         if Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
             return Response(
@@ -335,7 +335,7 @@ class BookmarkView(APIView):
         Bookmark.objects.create(user=user, custom_frame=custom_frame)
         custom_frame.bookmarks += 1
         custom_frame.save()
-
+        logger.info(f"custom_frame_id3: {custom_frame_id}")
         return Response(
             {"code": "CSF_2001", "message": "북마크 저장 성공"},
             status=status.HTTP_200_OK,

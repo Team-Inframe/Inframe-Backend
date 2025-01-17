@@ -45,7 +45,7 @@ class Bookmark(models.Model):
     bookmark_id = AutoField(primary_key=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    bookmarks = models.IntegerField(default=0)
+
+
     class Meta:
         db_table = "bookmarks"
