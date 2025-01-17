@@ -8,7 +8,7 @@ class CustomFrameSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomFrame
-        fields = ['custom_frame_title', 'custom_frame_url,']
+        fields = ['custom_frame_title', 'custom_frame_url']
 
 def validate_custom_frame(self, data):
     if not data.get('custom_id'):

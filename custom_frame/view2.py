@@ -8,7 +8,7 @@ from rest_framework import status, request
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .models import CustomFrame, User
+from .models import CustomFrame, User, Bookmark
 from django.shortcuts import get_object_or_404
 
 
@@ -259,16 +259,24 @@ class MySavedFramesView(APIView):
             "data": data
         }, status=status.HTTP_200_OK)
 
-class Bookmark(APIView):
+class BookmarkView(APIView):
     parser_classes = [MultiPartParser, FormParser]
+
     @swagger_auto_schema(
         operation_summary="커스텀 프레임 저장",
         operation_description="커스텀 프레임 저장",
         manual_parameters=[
             openapi.Parameter(
                 name="user_id",
-                in_=openapi.IN_QUERY,
-                description="유저 아이디",
+                in_=openapi.IN_FORM,
+                description="유저 ID",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+            openapi.Parameter(
+                name="custom_frame",
+                in_=openapi.IN_FORM,
+                description="커스텀 프레임 ID",
                 type=openapi.TYPE_INTEGER,
                 required=False,
             )
@@ -291,8 +299,44 @@ class Bookmark(APIView):
                     }
                 }
             ),
-        }, request_body=None,
+        },
 
     )
 
     def post(self, request):
+        user_id = request.data.get("user_id")
+        custom_frame_id = request.data.get("custom_frame_id")
+
+        # 요청 데이터 확인
+        if not user_id:
+            return Response(
+                {"code": "CSF_4001", "message": "user_id가 필요합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not custom_frame_id:
+            return Response(
+                {"code": "CSF_4002", "message": "custom_frame_id가 필요합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # User와 CustomFrame 객체 가져오기
+        user = get_object_or_404(User, id=user_id)
+        custom_frame = get_object_or_404(CustomFrame, id=custom_frame_id)
+
+        # 이미 북마크했는지 확인
+        if Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
+            return Response(
+                {"code": "CSF_4003", "message": "이미 북마크된 프레임입니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 북마크 생성
+        Bookmark.objects.create(user=user, custom_frame=custom_frame)
+        custom_frame.bookmarks += 1
+        custom_frame.save()
+
+        return Response(
+            {"code": "CSF_2001", "message": "북마크 저장 성공"},
+            status=status.HTTP_200_OK,
+        )
