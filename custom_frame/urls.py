@@ -1,6 +1,6 @@
 from django.urls import path
 from .view2 import CustomFrameDetailView, CustomMyFrameDetailView
-from .views1 import CustomFrameCreateView
+from .views1 import CustomFrameCreateView, CustomFrameListView
 
 urlpatterns = [
   #  path("")
@@ -11,4 +11,6 @@ urlpatterns = [
   #  path("mySavedFrames/", , name="mySavedFrames"),
   #  path("")
   path("", CustomFrameCreateView.as_view(), name="custom-frame-create"),
+  path("list/", CustomFrameListView.as_view(), name="custom_frame_list"),  # 목록 조회 API
+  
 ]
