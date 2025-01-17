@@ -28,7 +28,7 @@ services:
     command:
       - "--api.insecure=false"
       - "--providers.docker=true"
-      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.swarmMode=false"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
