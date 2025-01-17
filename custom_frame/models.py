@@ -38,6 +38,7 @@ class CustomFrameSticker(models.Model):
 
     class Meta:
         db_table = "custom_frame_sticker"
+        
 
 class Bookmark(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

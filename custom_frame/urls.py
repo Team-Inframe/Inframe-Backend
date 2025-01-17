@@ -1,10 +1,6 @@
 from django.urls import path
 
 
-
-
-
-
 from .view2 import CustomFrameDetailView, CustomMyFrameDetailView, MySavedFramesView, BookmarkView
 from .views1 import CustomFrameCreateView,  CustomFrameListView
 
@@ -14,7 +10,7 @@ urlpatterns = [
 
     path("bookmark/",BookmarkView.as_view() , name = "bookmark"),
     path("myframes/", CustomMyFrameDetailView.as_view() , name = "my_frames"),
-    path("mysaveframe/", MySavedFramesView.as_view(), name="mySavedFrames"),
+    path("users/<int:user_id>/", MySavedFramesView.as_view(), name="mySavedFrames"),
 
   #  path("")
   path("", CustomFrameCreateView.as_view(), name="custom-frame-create"),
