@@ -30,6 +30,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.swarmMode=false"
       - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entryPoints.web.http.redirections.entrypoint.scheme=https"
@@ -59,4 +60,4 @@ networks:
     driver: bridge
 
 volumes:
-  traefik-certificates:
+  - "traefik-certificates:/letsencrypt"
