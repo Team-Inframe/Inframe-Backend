@@ -6,7 +6,7 @@ services:
     networks:
       - inframe_net
     deploy:
-      replicas: 1
+      replicas: 2
       labels:
         - traefik.enable=true
         - traefik.http.services.backend.loadbalancer.server.port=8000
@@ -41,6 +41,10 @@ services:
       - "--accesslog=true"
       - "--api.dashboard=true"
     ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
       - target: 443
         published: 443
         protocol: tcp
@@ -60,4 +64,5 @@ networks:
     driver: bridge
 
 volumes:
-  - "traefik-certificates:/letsencrypt"
+  traefik-certificates:
+    driver: local
