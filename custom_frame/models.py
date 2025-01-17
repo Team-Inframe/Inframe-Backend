@@ -15,6 +15,7 @@ class CustomFrame(models.Model):
     custom_frame_url  = models.CharField(max_length=255)
     is_shared = models.BooleanField(default=False)
     is_bookmarked = models.BooleanField(default=False)
+    bookmarks = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
 

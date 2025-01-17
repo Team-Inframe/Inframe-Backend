@@ -147,3 +147,123 @@ class CustomFrameCreateView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class CustomFrameListView(APIView):
+    @swagger_auto_schema(
+        operation_summary="커스텀 프레임 목록 조회",
+        operation_description="커스텀 프레임의 목록을 조회합니다. 정렬 방식은 최신순(default) 또는 북마크수순으로 가능합니다.",
+        manual_parameters=[
+            openapi.Parameter(
+                "sort",
+                openapi.IN_QUERY,
+                description="정렬 방식 (latest: 최신순, bookmarks: 북마크수순)",
+                type=openapi.TYPE_STRING,
+                required=False,
+                enum=["latest", "bookmarks"],
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="커스텀 프레임 목록 조회 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="응답 코드"),
+                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="응답 메시지"),
+                        "data": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "customFrames": openapi.Schema(
+                                    type=openapi.TYPE_ARRAY,
+                                    items=openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            "customFrameId": openapi.Schema(
+                                                type=openapi.TYPE_INTEGER,
+                                                description="커스텀 프레임 ID",
+                                            ),
+                                            "customFrameTitle": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                description="커스텀 프레임 제목",
+                                            ),
+                                            "customFrameUrl": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                description="커스텀 프레임 URL",
+                                            ),
+                                            "bookmarks": openapi.Schema(
+                                                type=openapi.TYPE_INTEGER,
+                                                description="북마크 수",
+                                            ),
+                                            "created_at": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                format="date-time",
+                                                description="생성 시간",
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="커스텀 프레임 목록 조회 실패",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="에러 코드"),
+                        "status": openapi.Schema(type=openapi.TYPE_INTEGER, description="HTTP 상태 코드"),
+                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="에러 메시지"),
+                    },
+                ),
+            ),
+        },
+    )
+    def get(self, request):
+        try:
+            sort_option = request.GET.get("sort", "latest")
+            if sort_option == "bookmarks":
+                custom_frames = CustomFrame.objects.filter(is_deleted=False).order_by("-bookmarks")
+            else:  # 기본값: 최신순 정렬
+                custom_frames = CustomFrame.objects.filter(is_deleted=False).order_by("-created_at")
+
+            if not custom_frames.exists():
+                return Response(
+                    {
+                        "code": "CSF_4041",
+                        "status": 404,
+                        "message": "커스텀 프레임 목록 조회 실패",
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            custom_frames_data = [
+                {
+                    "customFrameId": frame.custom_frame_id,
+                    "customFrameTitle": frame.custom_frame_title,
+                    "customFrameUrl": frame.custom_frame_url,
+                    "bookmarks": frame.bookmarks,
+                    "created_at": frame.created_at.isoformat(),
+                }
+                for frame in custom_frames
+            ]
+
+            return Response(
+                {
+                    "code": "CSF_2001",
+                    "message": "커스텀 프레임 목록 조회 성공",
+                    "data": {"customFrames": custom_frames_data},
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "code": "CSF_5001",
+                    "status": 500,
+                    "message": f"서버 오류: {str(e)}",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
