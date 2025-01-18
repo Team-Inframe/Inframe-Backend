@@ -11,7 +11,7 @@ services:
         - traefik.enable=true
         - traefik.http.services.backend.loadbalancer.server.port=8000
         - traefik.http.routers.backend.entrypoints=websecure
-        - traefik.http.routers.backend.rule=Host(`inframe-server.store`)
+        - traefik.http.routers.backend.rule=Host(`${domain}`)
         - traefik.http.routers.backend.tls.certresolver=letsencrypt
     env_file:
       - .env
