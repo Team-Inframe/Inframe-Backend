@@ -39,10 +39,10 @@ services:
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1"
+#      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
 
 volumes:
