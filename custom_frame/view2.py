@@ -75,21 +75,23 @@ class CustomFrameDetailView(APIView):
             logger.info(f"custom_frame: {custom_frame}")
 
             # 연관된 스티커 조회
-            stickers = CustomFrameSticker.objects.filter(custom_frame=custom_frame, is_deleted=False)
-            sticker_list = [
+            customFrameStickers = CustomFrameSticker.objects.filter(custom_frame=custom_frame, is_deleted=False)
+                                  
+            sticker_list = [                
                 {
-                    "stickerImgUrl": sticker.sticker.sticker_img_url,
-                    "stickerX": sticker.position_x,
-                    "stickerY": sticker.position_y,
-                    "stickerWidth": sticker.sticker_width,
-                    "stickerHeight": sticker.sticker_height,
+                    "stickerUrl": customFrameSticker.sticker.sticker_url,
+                    "positionX": customFrameSticker.position_x,
+                    "positionY": customFrameSticker.position_y,
+                    "stickerWidth": customFrameSticker.sticker_width,
+                    "stickerHeight": customFrameSticker.sticker_height,
                 }
-                for sticker in stickers
+                for customFrameSticker in customFrameStickers
             ]
 
             # 응답 데이터 생성
             response_data = {
                 "code": "CSF_2001",
+                "status": 200,
                 "message": "커스텀 프레임 단일 조회 성공",
                 "data": {
                     "customFrameTitle": custom_frame.custom_frame_title,
@@ -184,28 +186,16 @@ class CustomMyFrameDetailView(APIView):
         user_id = request.query_params.get("user_id")
         user = get_object_or_404(User, user_id=user_id)
 
-        frames = CustomFrame.objects.filter(user=user, is_deleted=False).annotate(
-            date=TruncDate('created_at')
-        ).order_by('date')
+        frames = CustomFrame.objects.filter(user=user, is_deleted=False)
 
-        grouped_frames = {}
-        for frame in frames:
-            date = frame.date.strftime('%Y.%m.%d')
-            if date not in grouped_frames:
-                grouped_frames[date] = []
-
+        data = []
+        for frame in frames:            
             serialized_frame = CustomFrameSerializer(frame).data
-            grouped_frames[date].append(serialized_frame)
-
-        data = [
-            {
-                "date": date,
-                "frames": frames
-            } for date, frames in grouped_frames.items()
-        ]
-
+            data.append(serialized_frame)
+                    
         return Response({
             "code": "STG_2001",
+            "status": 200,
             "message": "나의 커스텀 프레임 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
@@ -260,28 +250,16 @@ class MySavedFramesView(APIView):
 
         user = get_object_or_404(User, user_id=user_id)
 
-        frames = CustomFrame.objects.filter(user=user, is_deleted=False).annotate(
-            date=TruncDate('created_at')
-        ).order_by('date')
+        frames = CustomFrame.objects.filter(user=user, is_deleted=False)
 
-        grouped_frames = {}
+        data = []
         for frame in frames:
-            date = frame.date.strftime('%Y.%m.%d')
-            if date not in grouped_frames:
-                grouped_frames[date] = []
-
             serialized_frame = CustomFrameSerializer(frame).data
-            grouped_frames[date].append(serialized_frame)
-
-        data = [
-            {
-                "date": date,
-                "frames": frames
-            } for date, frames in grouped_frames.items()
-        ]
-
+            data.append(serialized_frame)
+                
         return Response({
             "code": "STG_2001",
+            "status": 200,
             "message": "내가 저장한 프레임 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
@@ -354,7 +332,7 @@ class BookmarkView(APIView):
         # 이미 북마크했는지 확인
         if Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
             return Response(
-                {"code": "CSF_4003", "message": "이미 북마크된 프레임입니다."},
+                {"code": "CSF_4003", "status": 400, "message": "이미 북마크된 프레임입니다."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -364,6 +342,6 @@ class BookmarkView(APIView):
         custom_frame.save()
         logger.info(f"custom_frame_id3: {custom_frame_id}")
         return Response(
-            {"code": "CSF_2001", "message": "북마크 저장 성공"},
+            {"code": "CSF_2011", "status":201, "message": "북마크 저장 성공"},
             status=status.HTTP_200_OK,
         )

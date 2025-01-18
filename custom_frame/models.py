@@ -12,7 +12,7 @@ class CustomFrame(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     frame = models.ForeignKey(Frame, on_delete=models.CASCADE)
     custom_frame_title = models.CharField(max_length=30)
-    custom_frame_url  = models.CharField(max_length=255)
+    custom_frame_url  = models.CharField(max_length=255)    
     is_shared = models.BooleanField(default=False)
     is_bookmarked = models.BooleanField(default=False)
     bookmarks = models.IntegerField(default=0)
@@ -38,7 +38,6 @@ class CustomFrameSticker(models.Model):
 
     class Meta:
         db_table = "custom_frame_sticker"
-        
 
 class Bookmark(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
