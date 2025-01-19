@@ -186,13 +186,25 @@ class CustomMyFrameDetailView(APIView):
         user_id = request.query_params.get("user_id")
         user = get_object_or_404(User, user_id=user_id)
 
-        frames = CustomFrame.objects.filter(user=user, is_deleted=False)
-
-        data = []
+        frames = CustomFrame.objects.filter(user=user, is_deleted=False).annotate(
+            date=TruncDate('created_at')
+        ).order_by('date')
+        
+        grouped_frames = {}
         for frame in frames:            
+            date = frame.date.strftime('%Y.%m.%d')
+            if date not in grouped_frames:
+                grouped_frames[date] = []
             serialized_frame = CustomFrameSerializer(frame).data
-            data.append(serialized_frame)
-                    
+            grouped_frames[date].append(serialized_frame)
+        
+        data = [
+            {
+                "date": date,
+                "frames": frames
+            } for date, frames in grouped_frames.items()
+        ]
+                           
         return Response({
             "code": "STG_2001",
             "status": 200,
@@ -249,14 +261,27 @@ class MySavedFramesView(APIView):
     def get(self, request,user_id):
 
         user = get_object_or_404(User, user_id=user_id)
+        
+        bookmarks = Bookmark.objects.filter(user=user, is_deleted=False).select_related('custom_frame')                       
+        
+        grouped_frames = {}
+        for bookmark in bookmarks:
+            frame = bookmark.custom_frame
+            logger.info(f"custom_frame: {frame}")    
+            date = frame.created_at.date().strftime('%Y.%m.%d')
+            if date not in grouped_frames:
+                grouped_frames[date] = []
 
-        frames = CustomFrame.objects.filter(user=user, is_deleted=False)
-
-        data = []
-        for frame in frames:
             serialized_frame = CustomFrameSerializer(frame).data
-            data.append(serialized_frame)
-                
+            grouped_frames[date].append(serialized_frame)
+        
+        data = [
+            {
+                "date": date,
+                "frames": frames
+            } for date, frames in grouped_frames.items()
+        ]
+                                        
         return Response({
             "code": "STG_2001",
             "status": 200,
