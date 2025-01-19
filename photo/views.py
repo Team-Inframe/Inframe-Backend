@@ -174,12 +174,23 @@ class PhotoListView(APIView):
         user_id = request.query_params.get("user_id")
         user = get_object_or_404(User, user_id=user_id)
 
-        photos = Photo.objects.filter(user=user, is_deleted=False)
+        photos = Photo.objects.filter(user=user, is_deleted=False).annotate(
+            date=TruncDate('created_at')
+        ).order_by('date')
 
-        data = []
+        grouped_photos = {}
         for photo in photos:        
+            date = photo.date.strftime('%Y.%m.%d')
+            if(date not in grouped_photos):
+                grouped_photos[date] = []        
             serialized_photo = PhotoListSerializer(photo).data
-            data.append(serialized_photo)        
+            grouped_photos[date].append(serialized_photo)
+        data = [
+            {
+                "date": date,
+                "photos": photos
+            } for date, photos in grouped_photos.items()
+        ]
 
         return Response({
             "code": "PHO_2001",
