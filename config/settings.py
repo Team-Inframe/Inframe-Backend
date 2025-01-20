@@ -10,6 +10,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+SERVER_URL = os.getenv("SERVER_URL")
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -61,8 +62,11 @@ TEMPLATES = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://inframe-sigma.vercel.app"
+    "https://inframe-sigma.vercel.app",
+    env('SERVER_URL'),
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
