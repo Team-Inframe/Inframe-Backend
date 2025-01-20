@@ -16,32 +16,5 @@ services:
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
 
-  prometheus:
-    image: prom/prometheus:v2.45.6
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    networks:
-      - app-network
-
-  grafana: #서비스 이름
-    image: grafana/grafana:9.5.20 #이미지 이름:태그. 태그는 latest등등도 괜찮습니다.
-    container_name: grafana #컨테이너 이름. 아무거나 괜찮습니다
-    volumes:
-      - ./grafana:/etc/grafana/provisioning #그라파나 설정(config) 볼륨. 대부분 불필요 합지만 놔두시는게 좋습니다.
-      - ./grafana/data:/var/lib/grafana #그라파나 대시보드 데이터. 이걸 설정 해둬야지 가상 볼륨을 날리셔도 대시보드들이 남아있습니다.
-    ports:
-      - "3000:3000" #그라파나는 기본적으로 3000번 포트 입니다
-    networks:
-      - app-network #이 부분은 프로메테우스랑 같은 네트워크로 두면 됩니다.
-
-networks:
-  app-network:  # 네트워크 정의 추가
-
-
 volumes:
   static_volume:
