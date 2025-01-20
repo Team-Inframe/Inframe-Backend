@@ -121,8 +121,8 @@ class CustomFrameCreateView(APIView):
                 CustomFrameSticker.objects.create(
                     custom_frame=custom_frame,
                     sticker=sticker,
-                    position_x=sticker_data.get("sticker_x"),
-                    position_y=sticker_data.get("sticker_y"),
+                    position_x=sticker_data.get("position_x"),
+                    position_y=sticker_data.get("position_y"),
                     sticker_width=sticker_data.get("sticker_width"),
                     sticker_height=sticker_data.get("sticker_height"),
                     is_deleted=False,
@@ -132,6 +132,7 @@ class CustomFrameCreateView(APIView):
             return Response(
                 {
                     "code": "CSF_2001",
+                    "status": 201,
                     "message": "커스텀 프레임 생성 성공",
                     "data": {"custom_frame_id": custom_frame.custom_frame_id},
                 },
@@ -253,6 +254,7 @@ class CustomFrameListView(APIView):
             return Response(
                 {
                     "code": "CSF_2001",
+                    "status": 200,
                     "message": "커스텀 프레임 목록 조회 성공",
                     "data": {"customFrames": custom_frames_data},
                 },

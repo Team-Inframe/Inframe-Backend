@@ -126,7 +126,7 @@ class CreateFrameView(APIView):
             img.save(img_file, format="JPEG")
             img_file.seek(0)
 
-            frame_img_url = upload_file_to_s3(
+            frame_url = upload_file_to_s3(
                 file=img_file,
                 key=frame_img_name,
                 ExtraArgs={
@@ -134,7 +134,7 @@ class CreateFrameView(APIView):
                     "ACL": "public-read",
                 },
             )
-            if not frame_img_url:
+            if not frame_url:
                 return Response(
                     {
                         "code": "FRA_5001",
@@ -146,17 +146,18 @@ class CreateFrameView(APIView):
 
             # 프레임 데이터 DB 저장
             frame = Frame.objects.create(
-                frame_url=frame_img_name,
+                frame_url=frame_url,
                 camera_width=int(camera_width),
                 camera_height=int(camera_height),
             )
 
             response_data = {
                 "code": "FRA_2001",
+                "status": 201,
                 "message": "프레임 생성 성공",
                 "data": {
                     "frame_id": frame.frame_id,
-                    "frame_img_url": frame_img_url,
+                    "frame_url": frame_url,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
@@ -303,6 +304,7 @@ class FrameDetailView(APIView):
             logger.info(f"frame: {frame}")
             response_data = {
                 "code": "FRA_2001",
+                "status": 200,
                 "message": "초기 프레임 조회 성공",
                 "data": {
                     "frame_id" : frame.frame_id,

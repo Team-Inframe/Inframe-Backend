@@ -179,14 +179,12 @@ class PhotoListView(APIView):
         ).order_by('date')
 
         grouped_photos = {}
-        for photo in photos:
+        for photo in photos:        
             date = photo.date.strftime('%Y.%m.%d')
-            if date not in grouped_photos:
-                grouped_photos[date] = []
-
+            if(date not in grouped_photos):
+                grouped_photos[date] = []        
             serialized_photo = PhotoListSerializer(photo).data
             grouped_photos[date].append(serialized_photo)
-
         data = [
             {
                 "date": date,
@@ -196,6 +194,7 @@ class PhotoListView(APIView):
 
         return Response({
             "code": "PHO_2001",
+            "status": 200,
             "message": "사진 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
