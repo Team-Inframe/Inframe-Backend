@@ -108,8 +108,7 @@ class StickerView(APIView):
             translator = GoogleTranslator(source='ko', target='en')
             english_prompt = translator.translate(prompt)
 
-            detailed_prompt = f"A cute and colorful sticker design featuring {english_prompt}, with a fun and playful style, perfect for decoration."
-
+            detailed_prompt = f"a charming and vibrant {english_prompt} character design with beautiful, captivating eyes that outshine Aurora’s and evoke love at first sight. {english_prompt} should feel alive, with a vivid, lifelike two-dimensional effect and a cute, lovely appearance. The full body, including arms and legs, must be visible, and the {english_prompt} should always look straight ahead, exuding charm. The style should be animated with no text, featuring only one {english_prompt} in the frame"
             response = client.images.generate(
                 prompt=detailed_prompt,
                 n=1,
