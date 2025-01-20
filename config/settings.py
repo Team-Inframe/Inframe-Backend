@@ -65,6 +65,8 @@ CORS_ALLOWED_ORIGINS = [
     env('SERVER_URL'),
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
