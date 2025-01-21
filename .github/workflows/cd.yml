@@ -36,7 +36,14 @@ jobs:
           script: |
             docker compose pull
             docker compose up -d 
-
+      - name: Copy .env file to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST}}
+          username: ${{ secrets.USERNAME}}
+          key: ${{ secrets.SSH_KEY}}
+          source: .env
+          target: /home/ubuntu/
       - name: Clean Up Files in Server # 이후 docker-compose.yml 파일 삭제
         if: always()
         uses: appleboy/ssh-action@v1.1.0
