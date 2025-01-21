@@ -22,7 +22,7 @@ jobs:
           source: docker-compose-prod.yml
           target: /home/ubuntu/Inframe-Backend
 
-      - name: Copy .env file to Server # .env 파일 복사
+      - name: Copy .env file to Server
         uses: appleboy/scp-action@v0.1.8
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -31,7 +31,7 @@ jobs:
           source: .env
           target: /home/ubuntu/Inframe-Backend
 
-      - name: Deploy to Server # Docker Compose 실행
+      - name: Deploy to Server
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -45,7 +45,7 @@ jobs:
             docker compose -f docker-compose-prod.yml pull
             docker compose -f docker-compose-prod.yml up -d
 
-      - name: Clean up files in Server # 서버에서 파일 삭제
+      - name: Clean up files in Server
         if: always()
         uses: appleboy/ssh-action@v1.1.0
         with:

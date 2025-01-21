@@ -3,25 +3,25 @@ name: CI
 on:
   push:
     branches:
-      - develop # 메인 브렌치에 브랜치 머지 시 자동으로 실행
+      - develop
   pull_request:
     branches:
-      - '**' # 모든 브랜치에 PR 올릴 때 실행
+      - '**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4 # 레포 클론
+    - uses: actions/checkout@v4
 
-    - name: Show build number # 도커 허브에 올릴 빌드 넘버 만들기
+    - name: Show build number
       run: |
         echo "Build Number: ${{ github.run_number }}" # 빌드 넘버는 런 넘버 입니다
-    - name: Show pull request number # 여기는 pr 인지 확인 해주고 빌드 해줍니다.
+    - name: Show pull request number
       if: ${{ github.event_name == 'pull_request' }}
       run: |
         echo "PR Number: ${{ github.event.pull_request.number }}"
-    - name: Get PR Number for Develop Branch Merge # pr number 추출
+    - name: Get PR Number for Develop Branch Merge
       id: get_pr_number
       if: github.ref == 'refs/heads/develop'
       run: |
@@ -31,7 +31,7 @@ jobs:
 
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Set Docker Image Tag # pr넘버와 run number기반 도커 이미지 태그 만들기
+    - name: Set Docker Image Tag
       id: set_docker_image_tag
       env:
         PR_NUMBER: ${{ steps.get_pr_number.outputs.PR_NUMBER }}
@@ -43,12 +43,12 @@ jobs:
         fi
         echo "Docker Image Tag: $DOCKER_IMAGE_TAG"
         echo "DOCKER_IMAGE_TAG"="${DOCKER_IMAGE_TAG}" >> $GITHUB_OUTPUT
-    - name: Log in to Docker Hub # 도커 허브 로그인
+    - name: Log in to Docker Hub
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Build and push Docker image # 도커 이미지 빌드 이후 허브로 업로드
+    - name: Build and push Docker image
       env:
         DOCKER_IMAGE_TAG: ${{ steps.set_docker_image_tag.outputs.DOCKER_IMAGE_TAG }}
       run: |
