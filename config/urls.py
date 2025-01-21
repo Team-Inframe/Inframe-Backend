@@ -12,8 +12,8 @@ schema_view = get_schema_view(
         description="Inframe API Description",
     ),
     public=True,
-    permission_classes=(permissions.AllowAny,),
-    url=f"{settings.SERVER_URL}/api/v1"
+
+
 )
 
 urlpatterns = [
