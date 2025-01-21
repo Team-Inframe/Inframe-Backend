@@ -8,6 +8,8 @@ services:
       - static_volume:/Inframe-Backend/static
     ports:
       - "8000:8000"
+    depends_on:
+      - rabbitmq
     env_file:
       - .env
     command: >
@@ -16,5 +18,42 @@ services:
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - inf
+
+  celery:
+    build:
+      context: .
+    command: >
+      sh -c "celery -A config worker --loglevel=info &&
+            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
+    depends_on:
+      - rabbitmq
+    networks:
+      - inf
+
+  celery-beat:
+    build:
+      context: .
+    command:  >
+      sh -c "celery -A config worker --loglevel=info &&
+            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
+    depends_on:
+      - rabbitmq
+    networks:
+      - inf
+
 volumes:
   static_volume:
+
+networks:
+  inf:
+    driver: bridge
