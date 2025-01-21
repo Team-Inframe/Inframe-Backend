@@ -3,53 +3,45 @@ name: Deploy Compose
 on:
   push:
     branches:
-	    - main
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code # 코드 클론
+      # 1. GitHub Actions 워크플로 시작 시 코드 체크아웃
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy the app # 배포중 메시지 출력
-        run: echo "Deploying the app..."
-
-      - name: Copy file to Server # docker-compose.yml파일을 서버로 복사
-        id: copy
+      # 2. docker-compose.yml을 서버로 복사
+      - name: Copy docker-compose-prod.yml to Server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HOST}}
-          username: ${{ secrets.USERNAME}}
-          key: ${{ secrets.SSH_KEY}}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: docker-compose-prod.yml
           target: /home/ubuntu/
 
-      - name: Deploy to Server # 복사된 docker-compose.yml 파일을 실행
-        id: deploy
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.HOST}}
-          username: ${{ secrets.USERNAME}}
-          key: ${{ secrets.SSH_KEY}}
-          script: |
-           docker compose -f docker-compose-prod.yml pull
-           docker compose -f docker-compose-prod.yml up -d
+      # 3. .env 파일을 서버로 복사
       - name: Copy .env file to Server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HOST}}
-          username: ${{ secrets.USERNAME}}
-          key: ${{ secrets.SSH_KEY}}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: .env
           target: /home/ubuntu/
-      - name: Clean Up Files in Server # 이후 docker-compose.yml 파일 삭제
-        if: always()
+
+      # 4. 서버에서 Docker Compose 실행
+      - name: Deploy to Server
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ secrets.HOST}}
-          username: ${{ secrets.USERNAME}}
-          key: ${{ secrets.SSH_KEY}}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            rm -f /home/ubuntu/docker-compose-prod.yml
+            cd /home/ubuntu/
+           docker compose -f docker-compose-prod.yml pull
+           docker compose -f docker-compose-prod.yml up -d
