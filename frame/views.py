@@ -128,7 +128,7 @@ class CreateFrameView(APIView):
 
             frame_url = upload_file_to_s3(
                 file=img_file,
-                key=frame_img_name,
+                key=f"basic-frames/{frame_img_name}",
                 ExtraArgs={
                     "ContentType": "image/jpeg",
                     "ACL": "public-read",

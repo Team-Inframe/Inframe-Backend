@@ -88,7 +88,7 @@ class CustomFrameCreateView(APIView):
 
             custom_frame_img_url = upload_file_to_s3(
                 file=img_file,
-                key=custom_frame_img_name,
+                key=f"custom-frames/{custom_frame_img_name}",
                 ExtraArgs={
                     "ContentType": "image/jpeg",
                     "ACL": "public-read",
