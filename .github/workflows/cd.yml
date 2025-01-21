@@ -1,0 +1,48 @@
+name: Deploy Compose
+
+on:
+  push:
+    branches:
+	    - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code # 코드 클론
+        uses: actions/checkout@v4
+
+      - name: Deploy the app # 배포중 메시지 출력
+        run: echo "Deploying the app..."
+
+      - name: Copy file to Server # docker-compose.yml파일을 서버로 복사
+        id: copy
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PASSWORD }}
+          source: docker-compose.yml
+          target: /home/ubuntu/
+
+      - name: Deploy to Server # 복사된 docker-compose.yml 파일을 실행
+        id: deploy
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            docker compose pull
+            docker compose up -d 
+
+      - name: Clean Up Files in Server # 이후 docker-compose.yml 파일 삭제
+        if: always()
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            rm -f /home/ubuntu/docker-compose.yml
