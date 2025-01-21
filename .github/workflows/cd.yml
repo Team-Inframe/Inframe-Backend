@@ -1,0 +1,57 @@
+name: Deploy Compose
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code # 코드 클론
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose file to Server # docker-compose 파일 복사
+        uses: appleboy/scp-action@v0.1.8
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: docker-compose-prod.yml
+          target: /home/ubuntu/Inframe-Backend
+
+      - name: Copy .env file to Server
+        uses: appleboy/scp-action@v0.1.8
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: .env
+          target: /home/ubuntu/Inframe-Backend
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ubuntu/Inframe-Backend
+            export DJANGO_SECRET_KEY=${{secrets.DJANGO_SECRET_KEY}}
+            export ALLOWED_HOSTS=${{secrets.ALLOWED_HOSTS}}
+            export DEBUG=${{secrets.DEBUG}}
+            docker compose -f docker-compose-prod.yml pull
+            docker compose -f docker-compose-prod.yml up -d
+
+      - name: Clean up files in Server
+        if: always()
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            rm -f /home/ubuntu/Inframe-Backend/docker-compose-prod.yml
+            rm -f /home/ubuntu/Inframe-Backend/.env

@@ -1,12 +1,10 @@
 services:
   backend:
     container_name: backend
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: inframe2/hyeonho2:0.66.14
     volumes:
       - static_volume:/Inframe-Backend/static
-      - .:/app
+
     ports:
       - "8000:8000"
     env_file:
