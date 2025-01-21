@@ -39,8 +39,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/Inframe-Backend
-            docker compose -f docker-compose-prod.yml --env-file .env pull
-            docker compose -f docker-compose-prod.yml --env-file .env up -d
+            export DJANGO_SECRET_KEY=${{secrets.DJANGO_SECRET_KEY}}
+            export ALLOWED_HOSTS=${{secrets.ALLOWED_HOSTS}}
+            export DEBUG=${{secrets.DEBUG}}
+            docker compose -f docker-compose-prod.yml pull
+            docker compose -f docker-compose-prod.yml up -d
 
       - name: Clean up files in Server # 서버에서 파일 삭제
         if: always()
