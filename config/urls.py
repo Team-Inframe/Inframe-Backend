@@ -12,7 +12,7 @@ schema_view = get_schema_view(
         description="Inframe API Description",
     ),
     public=True,
-
+    permission_classes=(permissions.AllowAny,),
 
 )
 
