@@ -16,7 +16,7 @@ jobs:
 
     - name: Show build number
       run: |
-        echo "Build Number: ${{ github.run_number }}" # 빌드 넘버는 런 넘버 입니다
+        echo "Build Number: ${{ github.run_number }}"
     - name: Show pull request number
       if: ${{ github.event_name == 'pull_request' }}
       run: |

@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code # 코드 클론
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose file to Server # docker-compose 파일 복사
+      - name: Copy docker-compose file to Server
         uses: appleboy/scp-action@v0.1.8
         with:
           host: ${{ secrets.SSH_HOST }}

@@ -1,7 +1,9 @@
 services:
   backend:
     container_name: backend
-    image: inframe2/hyeonho2:0.66.14
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - static_volume:/Inframe-Backend/static
 
