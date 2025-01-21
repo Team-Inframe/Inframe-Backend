@@ -20,9 +20,9 @@ jobs:
         id: copy
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.HOST}}
+          username: ${{ secrets.USERNAME}}
+          key: ${{ secrets.SSH_KEY}}
           source: docker-compose.yml
           target: /home/ubuntu/
 
@@ -30,9 +30,9 @@ jobs:
         id: deploy
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.HOST}}
+          username: ${{ secrets.USERNAME}}
+          key: ${{ secrets.SSH_KEY}}
           script: |
             docker compose pull
             docker compose up -d 
@@ -41,8 +41,8 @@ jobs:
         if: always()
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.HOST}}
+          username: ${{ secrets.USERNAME}}
+          key: ${{ secrets.SSH_KEY}}
           script: |
             rm -f /home/ubuntu/docker-compose.yml
