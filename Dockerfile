@@ -17,6 +17,8 @@ ENV ALLOWED_HOSTS=$ALLOWED_HOSTS
 
 ENV DEBUG=$DEBUG
 
+ENV SERVER_URL=$SERVER_URL
+
 RUN python manage.py collectstatic --noinput
 
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]

@@ -55,6 +55,6 @@ jobs:
         export DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
         export ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }}
         export DEBUG=${{ secrets.DEBUG }}
-        
+        export SERVER_URL=${{ secrets.SERVER_URL }}
         docker build -t ${{ secrets.DOCKER_USERNAME }}/hyeonho2:$DOCKER_IMAGE_TAG .
         docker push ${{ secrets.DOCKER_USERNAME }}/hyeonho2:$DOCKER_IMAGE_TAG
