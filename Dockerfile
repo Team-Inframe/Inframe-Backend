@@ -11,15 +11,15 @@ RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
 COPY . ./
-#eV DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
+#ENV DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
 
-#NV ALLOWED_HOSTS=$ALLOWED_HOSTS
+#ENV ALLOWED_HOSTS=$ALLOWED_HOSTS
 
-#NV DEBUG=$DEBUG
+#ENV DEBUG=$DEBUG
 
-#NV SERVER_URL=$SERVER_URL
+#ENV SERVER_URL=$SERVER_URL
 
-#UN python manage.py collectstatic --noinput
+#RUN python manage.py collectstatic --noinput
 
-#MD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
 
