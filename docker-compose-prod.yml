@@ -80,3 +80,6 @@ services:
 volumes:
   static_volume:
 
+networks:
+  inf:
+    driver: bridge
