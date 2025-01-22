@@ -36,6 +36,7 @@ class CustomFrameDetailView(APIView):
                             "customFrameTitle": "string",
                             "customFrameUrl": "string",
                             "frameId": 0,
+                            "bookmarks": 0,
                             "stickers": [
                                 {
                                     "stickerImgUrl": "string",
@@ -97,6 +98,7 @@ class CustomFrameDetailView(APIView):
                     "customFrameTitle": custom_frame.custom_frame_title,
                     "customFrameUrl": custom_frame.custom_frame_url,
                     "frameId": custom_frame.frame.frame_id,
+                    "bookmarks": custom_frame.bookmarks,
                     "stickers": sticker_list,
                 },
             }
