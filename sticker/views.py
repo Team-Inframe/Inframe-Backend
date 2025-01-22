@@ -173,3 +173,73 @@ class StickerView(APIView):
         from django.core.files.storage import default_storage
         file_path = default_storage.save(file_name, image)
         return default_storage.url(file_path)
+
+
+
+class StickerListView(APIView):
+    @swagger_auto_schema(
+        operation_summary="사용자별 스티커 목록 조회 API",
+        operation_description="스티커 생성 페이지",
+        manual_parameters=[
+            openapi.Parameter(
+                name="user_id",
+                in_=openapi.IN_QUERY,
+                description="조회할 유저의 ID",
+                type=openapi.TYPE_INTEGER,
+                required=True,
+            ),
+        ],
+        responses={
+            201: openapi.Response(
+                description="스티커 조회 완료",
+                examples={
+                    "application/json": {
+                        "code": "STK_2001",
+                        "status": 201,
+                        "message": "스티커 조회 완료",
+                        "data": [
+                          {
+                            "sticker": [
+                              {
+                                "sticker_id": 0,
+                                "stickerUrl": "https://example.com/stickers/generated_sticker.png",
+                              },
+                              {
+                                "sticker_id": 0,
+                                "stickerUrl": "https://example.com/stickers/generated_sticker.png",
+                              },
+                            ],
+                          },
+                        ],
+                      }
+                    }
+                ),
+            400: openapi.Response(
+                description="유효하지 않은 데이터입니다.",
+                examples={
+                    "application/json": {
+                        "code": "STK_4001",
+                        "status": 400,
+                        "message": "스티커 조회 실패",
+                    }
+                },
+            ),
+        },
+    )
+    def get(self, request):
+        user_id = request.query_params.get("user_id")
+        user = get_object_or_404(User, user_id=user_id)
+
+        stickers = (
+            Sticker.objects.filter(user=user, is_deleted=False)
+            .only("sticker_id", "sticker_url")
+            .values("sticker_id", "sticker_url")
+        )
+
+        return Response({
+            "code": "STK_2001",
+            "status": 200,
+            "message": "스티커 목록 조회 성공",
+            "data": stickers
+        }, status=status.HTTP_200_OK)
+
