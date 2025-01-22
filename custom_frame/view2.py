@@ -364,11 +364,11 @@ class BookmarkView(APIView):
             Bookmark.objects.create(user=user, custom_frame=custom_frame)
             custom_frame.bookmarks += 1
             custom_frame.save(update_fields=['bookmarks'])
-            return Response({"message": "Bookmark added successfully"}, status=201)
+            return Response({"message": "북마크 저장 성공"}, status=201)
         else:
             Bookmark.objects.filter(user_id=user_id, custom_frame=custom_frame).delete()
             custom_frame.bookmarks -= 1
             custom_frame.save(update_fields=['bookmarks'])
-            return Response({"message": "Bookmark removed successfully"}, status=200)
+            return Response({"message": "북마크 삭제 성공"}, status=200)
 
 
