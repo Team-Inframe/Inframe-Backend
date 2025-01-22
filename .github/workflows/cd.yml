@@ -19,10 +19,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            git clone https://github.com/Team-Inframe/Inframe-Backend.git
             cd Inframe-Backend
             git checkout main
             git pull origin main 
-            docker-compose -f docker-compose-prod.yml down
-            docker-compose -f docker-compose-prod.yml up -d --build
+            sudo docker-compose -f docker-compose-prod.yml down
+            sudo docker-compose -f docker-compose-prod.yml up -d --build
             rm -rf Inframe-Backend
