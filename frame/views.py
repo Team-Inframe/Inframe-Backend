@@ -96,7 +96,6 @@ class CreateFrameView(APIView):
         camera_height = request.data.get("camera_height")
         frame_img = request.FILES.get("frame_img")
 
-        # 필수 파라미터 확인
         if not camera_width or not camera_height:
             return Response(
                 {
@@ -118,9 +117,12 @@ class CreateFrameView(APIView):
             )
 
         try:
-            # 이미지 저장 처리
             image_data = frame_img.read()
             img = Image.open(BytesIO(image_data))
+
+            if img.mode == 'RGBA':
+                img = img.convert('RGB')
+
             frame_img_name = f"frame_{int(time.time())}.jpg"
             img_file = BytesIO()
             img.save(img_file, format="JPEG")
