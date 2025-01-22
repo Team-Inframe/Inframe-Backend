@@ -57,7 +57,7 @@ services:
 
   celery:
     build:
-      context: ./Inframe-Backend
+      context: .
     command:  >
       sh -c "celery -A config worker --loglevel=info &&
             wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
@@ -68,7 +68,7 @@ services:
 
   celery-beat:
     build:
-      context: ./Inframe-Backend
+      context: .
     command:  >
       sh -c "celery -A config worker --loglevel=info &&
             wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
