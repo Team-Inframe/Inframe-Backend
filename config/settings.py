@@ -19,6 +19,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_beat',
+    'django_celery_results',
     'rest_framework',
     'drf_yasg',
     'storages',
@@ -106,6 +108,12 @@ STORAGES = {
         },
     },
 }
+
+CELERY_BROKER_URL = 'pyamqp://guest:guest@rabbitmq//'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
