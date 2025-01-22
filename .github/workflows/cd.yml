@@ -13,24 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose file to Server
-        uses: appleboy/scp-action@v0.1.8
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: docker-compose-prod.yml
-          target: /home/ubuntu/Inframe-Backend
-
-      - name: Copy .env file to Server
-        uses: appleboy/scp-action@v0.1.8
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: .env
-          target: /home/ubuntu/Inframe-Backend
-
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.1.0
         with:
@@ -38,20 +20,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/ubuntu/Inframe-Backend
-            export DJANGO_SECRET_KEY=${{secrets.DJANGO_SECRET_KEY}}
-            export ALLOWED_HOSTS=${{secrets.ALLOWED_HOSTS}}
-            export DEBUG=${{secrets.DEBUG}}
-            docker compose -f docker-compose-prod.yml pull
+            git clone https://github.com/Team-Inframe/Inframe-Backend.git
+            cd Inframe-Backend
+            docker compose -f docker-compose-prod.yml down
             docker compose -f docker-compose-prod.yml up -d
-
-      - name: Clean up files in Server
-        if: always()
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            rm -f /home/ubuntu/Inframe-Backend/docker-compose-prod.yml
-            rm -f /home/ubuntu/Inframe-Backend/.env
+            rm -rf Inframe-Backend
