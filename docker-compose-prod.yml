@@ -26,8 +26,6 @@ services:
   backend:
     container_name: backend
     image: inframe2/hyeonho2:0.66.14
-    volumes:
-      - static_volume:/Inframe-Backend/static
     env_file:
       - .env
     command: >
@@ -43,6 +41,3 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-
-volumes:
-  static_volume:
