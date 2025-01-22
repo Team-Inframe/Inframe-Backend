@@ -12,7 +12,7 @@ from drf_yasg import openapi
 from .models import CustomFrame, User, CustomFrameSticker, Bookmark
 
 from django.shortcuts import get_object_or_404
-
+from django.db.models import F
 
 import logging
 
@@ -357,18 +357,18 @@ class BookmarkView(APIView):
         custom_frame = get_object_or_404(CustomFrame, custom_frame_id=custom_frame_id)
         logger.info(f"custom_frame_id2: {custom_frame_id}")
         # 이미 북마크했는지 확인
-        if Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
-            return Response(
-                {"code": "CSF_4003", "status": 400, "message": "이미 북마크된 프레임입니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+
 
         # 북마크 생성
-        Bookmark.objects.create(user=user, custom_frame=custom_frame)
-        custom_frame.bookmarks += 1
-        custom_frame.save()
-        logger.info(f"custom_frame_id3: {custom_frame_id}")
-        return Response(
-            {"code": "CSF_2011", "status":201, "message": "북마크 저장 성공"},
-            status=status.HTTP_200_OK,
-        )
+        if not Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
+            Bookmark.objects.create(user=user, custom_frame=custom_frame)
+            custom_frame.bookmarks += 1
+            custom_frame.save(update_fields=['bookmarks'])
+            return Response({"message": "북마크 저장 성공"}, status=201)
+        else:
+            Bookmark.objects.filter(user_id=user_id, custom_frame=custom_frame).delete()
+            custom_frame.bookmarks -= 1
+            custom_frame.save(update_fields=['bookmarks'])
+            return Response({"message": "북마크 삭제 성공"}, status=200)
+
+
