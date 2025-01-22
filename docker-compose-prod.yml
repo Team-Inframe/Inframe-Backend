@@ -41,3 +41,42 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - inf
+
+  celery:
+    build:
+      context: ./Inframe-Backend
+    command:  >
+      sh -c "celery -A config worker --loglevel=info &&
+            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
+    depends_on:
+      - rabbitmq
+    networks:
+      - inf
+
+  celery-beat:
+    build:
+      context: ./Inframe-Backend
+    command:  >
+      sh -c "celery -A config worker --loglevel=info &&
+            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
+    depends_on:
+      - rabbitmq
+    networks:
+      - inf
+
+volumes:
+  static_volume:
+
