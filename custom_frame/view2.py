@@ -357,34 +357,18 @@ class BookmarkView(APIView):
         custom_frame = get_object_or_404(CustomFrame, custom_frame_id=custom_frame_id)
         logger.info(f"custom_frame_id2: {custom_frame_id}")
         # 이미 북마크했는지 확인
-        if Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
-            return Response(
-                {"code": "CSF_4003", "status": 400, "message": "이미 북마크된 프레임입니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-        is_bookmarked = request.data.get("is_bookmarked")
-        bookmarked = get_object_or_404(CustomFrame, is_bookmarked=is_bookmarked)
+
         # 북마크 생성
         if not Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
-            # 북마크가 없으면 생성
             Bookmark.objects.create(user=user, custom_frame=custom_frame)
-            custom_frame.bookmarks = F('bookmarks') + 1  # 원자적 증가
-            custom_frame.save(update_fields=['bookmarks'])  # 필요한 필드만 저장
-            logger.info(f"custom_frame_id3: {custom_frame_id}")
-            return Response(
-                {"code": "CSF_2011", "status": 201, "message": "북마크 저장 성공"},
-                status=status.HTTP_201_CREATED,
-            )
+            custom_frame.bookmarks += 1
+            custom_frame.save(update_fields=['bookmarks'])
+            return Response({"message": "Bookmark added successfully"}, status=201)
         else:
-            # 북마크가 있으면 삭제
-            Bookmark.objects.filter(user=user, custom_frame=custom_frame).delete()
-            custom_frame.bookmarks = F('bookmarks') - 1  # 원자적 감소
-            custom_frame.save(update_fields=['bookmarks'])  # 필요한 필드만 저장
-            logger.info(f"custom_frame_id3: {custom_frame_id}")
-            return Response(
-                {"code": "CSF_2012", "status": 200, "message": "북마크 삭제 성공"},
-                status=status.HTTP_200_OK,
-            )
+            Bookmark.objects.filter(user_id=user_id, custom_frame=custom_frame).delete()
+            custom_frame.bookmarks -= 1
+            custom_frame.save(update_fields=['bookmarks'])
+            return Response({"message": "Bookmark removed successfully"}, status=200)
 
 
