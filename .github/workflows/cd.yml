@@ -1,0 +1,27 @@
+name: Deploy Compose
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd Inframe-Backend
+            git checkout main
+            git pull origin main 
+            sudo docker-compose -f docker-compose-prod.yml down
+            sudo docker-compose -f docker-compose-prod.yml up -d --build
+            rm -rf Inframe-Backend

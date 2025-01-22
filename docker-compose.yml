@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - static_volume:/Inframe-Backend/static
+
     ports:
       - "8000:8000"
     depends_on:
@@ -17,6 +18,15 @@ services:
             python manage.py makemigrations --noinput &&
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
+    develop:
+       watch:
+        - action: rebuild
+          path: requirements.txt
+          ignore:
+          - .venv
+        - action: sync
+          path: ./manage.py
+          target: /Inframe-Backend/manage.py
 
   rabbitmq:
     image: rabbitmq:3-management

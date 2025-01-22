@@ -25,11 +25,7 @@ services:
 
   backend:
     container_name: backend
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - static_volume:/Inframe-Backend/static
+    image: inframe2/hyeonho2:0.66.14
     env_file:
       - .env
     command: >
@@ -42,7 +38,8 @@ services:
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
-#      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1"
+      - "traefik.http.routers.backend.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
 
 
@@ -82,3 +79,4 @@ services:
 
 volumes:
   static_volume:
+

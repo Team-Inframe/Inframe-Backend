@@ -4,9 +4,6 @@ from user.models import User
 from frame.models import Frame
 from sticker.models import Sticker
 
-# Create your models here.
-
-
 class CustomFrame(models.Model):
     custom_frame_id = AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
