@@ -295,8 +295,8 @@ class BookmarkView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(
-        operation_summary="커스텀 프레임 저장",
-        operation_description="커스텀 프레임 저장",
+        operation_summary="커스텀 프레임 북마크",
+        operation_description="커스텀 프레임 북마크",
         manual_parameters=[
             openapi.Parameter(
                 name="user_id",
@@ -315,31 +315,35 @@ class BookmarkView(APIView):
         ],
         responses={
             200: openapi.Response(
-                description="커스텀 프레임 저장 성공",
+                description="커스텀 프레임 북마크 성공",
                 examples={
                     "code": "CSF_2001",
-                    "message": "커스텀 프레임 저장 성공",
+                    "status": 200,
+                    "data": {
+                        "is_bookmarked": True
+                    },
+                    "message": "커스텀 프레임 북마크 성공",
                 }
             ),
             400: openapi.Response(
-                description="내가 저장한 프레임 목록 조회 실패",
+                description="커스텀 프레임 북마크 실패",
                 examples={
                     "application/json": {
                         "code": "CSF_4041",
                         "status": 404,
-                        "message": "커스텀 프레임이 존재하지 않습니다."
+                        "message": "커스텀 프레임 북마크 실패"
                     }
                 }
             ),
         },
-
     )
 
-    def post(self, request ):
+
+    def post(self, request):
         user_id = request.data.get("user_id")
         custom_frame_id = request.data.get("custom_frame_id")
         logger.info(f"custom_frame_id1: {custom_frame_id}")
-        # 요청 데이터 확인
+
         if not user_id:
             return Response(
                 {"code": "CSF_4001", "message": "user_id가 필요합니다."},
@@ -352,23 +356,39 @@ class BookmarkView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # User와 CustomFrame 객체 가져오기
         user = get_object_or_404(User, user_id=user_id)
         custom_frame = get_object_or_404(CustomFrame, custom_frame_id=custom_frame_id)
         logger.info(f"custom_frame_id2: {custom_frame_id}")
-        # 이미 북마크했는지 확인
 
-
-        # 북마크 생성
         if not Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
             Bookmark.objects.create(user=user, custom_frame=custom_frame)
             custom_frame.bookmarks += 1
             custom_frame.save(update_fields=['bookmarks'])
-            return Response({"message": "북마크 저장 성공"}, status=201)
+            return Response(
+                {
+                    "code": "CSF_2001",
+                    "status": 201,
+                    "data": {
+                        "is_bookmarked": True
+                    },
+                    "message": "북마크 저장 성공",
+                },
+                status=status.HTTP_201_CREATED,
+            )
         else:
             Bookmark.objects.filter(user_id=user_id, custom_frame=custom_frame).delete()
             custom_frame.bookmarks -= 1
             custom_frame.save(update_fields=['bookmarks'])
-            return Response({"message": "북마크 삭제 성공"}, status=200)
+            return Response(
+                {
+                    "code": "CSF_2002",
+                    "status": 200,
+                    "data": {
+                        "is_bookmarked": False
+                    },
+                    "message": "북마크 삭제 성공",
+                },
+                status=status.HTTP_200_OK,
+            )
 
 
