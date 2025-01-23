@@ -25,7 +25,7 @@ services:
 
   backend:
     container_name: backend
-    image: inframe2/hyeonho2:1.1.88
+    image: inframe2/hyeonho2:1.1.90
     env_file:
       - .env
     command: >
