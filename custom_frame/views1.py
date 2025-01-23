@@ -26,6 +26,28 @@ class CustomFrameCreateView(APIView):
         operation_summary="커스텀 프레임 생성 API",
         operation_description="form-data로 커스텀 프레임을 생성합니다.",
         manual_parameters=[
+
+            openapi.Parameter(
+                'user',
+                openapi.IN_FORM,
+                description='유저 아이디',
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'frame',
+                openapi.IN_FORM,
+                description='프레임 아이디',
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'custom_frame_title',
+                openapi.IN_FORM,
+                description='커스텀 프레임 제목',
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
             openapi.Parameter(
                 'custom_frame_img',
                 openapi.IN_FORM,
@@ -34,12 +56,26 @@ class CustomFrameCreateView(APIView):
                 required=True
             ),
             openapi.Parameter(
-                'data',
+                'is_shared',
                 openapi.IN_FORM,
-                description='커스텀 프레임 데이터(JSON 문자열)',
-                type=openapi.TYPE_STRING,
+                description='공유 여부',
+                type=openapi.TYPE_BOOLEAN,
                 required=True
-            ),            
+            ),
+            openapi.Parameter(
+                'is_bookmarked',
+                openapi.IN_FORM,
+                description='북마크 여부',
+                type=openapi.TYPE_BOOLEAN,
+                required=True
+            ),
+            openapi.Parameter(
+                'is_deleted',
+                openapi.IN_FORM,
+                description='삭제 여부',
+                type=openapi.TYPE_BOOLEAN,
+                required=True
+            )
         ],
         responses={
             200: openapi.Response(
@@ -73,12 +109,21 @@ class CustomFrameCreateView(APIView):
     )
     def post(self, request):
         try:
-            data_str = request.POST.get("data", None)
+            # POST 데이터 가져오기 (JSON 데이터가 아니라면 request.POST 사용)
+            data_str = request.POST.get("data")
+            if not data_str:
+                return Response({"code": "CSF_4001", "message": "요청 데이터가 없습니다."}, status=400)
+
             data = json.loads(data_str)
+
             logger.info(f"data : {data}")
             logger.info(f"user_id : {data.get('user_id')}")
+
+            # 이미지 파일 처리
             custom_frame_img = request.FILES.get("custom_frame_img")
-            # 이미지 저장 처리
+            if not custom_frame_img:
+                return Response({"code": "CSF_4002", "message": "이미지가 전송되지 않았습니다."}, status=400)
+
             image_data = custom_frame_img.read()
             img = Image.open(BytesIO(image_data))
             custom_frame_img_name = f"custom_frame_{int(time.time())}.jpg"
@@ -86,38 +131,42 @@ class CustomFrameCreateView(APIView):
             img.save(img_file, format="JPEG")
             img_file.seek(0)
 
+            # S3 업로드
             custom_frame_img_url = upload_file_to_s3(
                 file=img_file,
                 key=f"custom-frames/{custom_frame_img_name}",
-                ExtraArgs={
-                    "ContentType": "image/jpeg",
-                    "ACL": "public-read",
-                },
+                ExtraArgs={"ContentType": "image/jpeg", "ACL": "public-read"},
             )
 
-            user = User.objects.get(user_id=data.get("user_id"))
-            frame = Frame.objects.get(frame_id=data.get("frame_id"))
+            # 유저와 프레임 조회
+            user = User.objects.filter(user_id=data.get("user_id")).first()
+            if not user:
+                return Response({"code": "CSF_4041", "message": "해당 유저를 찾을 수 없습니다."}, status=404)
 
+            frame = Frame.objects.filter(frame_id=data.get("frame_id")).first()
+            if not frame:
+                return Response({"code": "CSF_4042", "message": "해당 프레임을 찾을 수 없습니다."}, status=404)
+
+            # CustomFrame 생성
             custom_frame = CustomFrame.objects.create(
                 user=user,
                 frame=frame,
                 custom_frame_title=data.get("custom_frame_title"),
                 custom_frame_url=custom_frame_img_url,
-                is_shared=data.get("is_shared", False),
+                is_shared=data.get("is_shared"),
                 is_bookmarked=False,
                 is_deleted=False,
             )
 
-            # Sticker 데이터 저장 및 관계 추가
+            # Sticker 데이터 처리
             stickers = data.get("stickers", [])
-            
             for sticker_data in stickers:
-                # sticker_id 추출 및 로그
                 sticker_id = sticker_data.get("sticker_id")
-                
-                sticker = Sticker.objects.get(sticker_id=sticker_id)
-                                
-                # CustomFrameSticker 저장
+                sticker = Sticker.objects.filter(sticker_id=sticker_id).first()
+                if not sticker:
+                    logger.warning(f"스티커 ID {sticker_id}가 존재하지 않습니다.")
+                    continue
+
                 CustomFrameSticker.objects.create(
                     custom_frame=custom_frame,
                     sticker=sticker,
@@ -136,16 +185,13 @@ class CustomFrameCreateView(APIView):
                     "message": "커스텀 프레임 생성 성공",
                     "data": {"custom_frame_id": custom_frame.custom_frame_id},
                 },
-                status=status.HTTP_200_OK,
+                status=status.HTTP_201_CREATED,
             )
 
         except Exception as e:
+            logger.error(f"서버 오류: {str(e)}")
             return Response(
-                {
-                    "code": "CSF_5001",
-                    "status": 500,
-                    "message": "서버 오류: {}".format(str(e)),
-                },
+                {"code": "CSF_5001", "status": 500, "message": f"서버 오류: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -223,49 +269,58 @@ class CustomFrameListView(APIView):
         },
     )
     def get(self, request):
-        try:
-            sort_option = request.GET.get("sort", "latest")
-            if sort_option == "bookmarks":
-                custom_frames = CustomFrame.objects.filter(is_deleted=False).order_by("-bookmarks")
-            else:  # 기본값: 최신순 정렬
-                custom_frames = CustomFrame.objects.filter(is_deleted=False).order_by("-created_at")
 
-            if not custom_frames.exists():
+
+            try:
+                # GET 파라미터 가져오기
+                sort_option = request.GET.get("sort", "latest")
+
+                # 정렬 옵션에 따라 쿼리 실행
+                if sort_option == "bookmarks":
+                    custom_frames = CustomFrame.objects.filter(is_deleted=False).order_by("-bookmarks")
+                else:  # 기본값: 최신순 정렬
+                    custom_frames = CustomFrame.objects.filter(is_deleted=False).order_by("-created_at")
+
+                # 조회된 커스텀 프레임이 없는 경우
+                if not custom_frames.exists():
+                    return Response(
+                        {
+                            "code": "CSF_4041",
+                            "status": 404,
+                            "message": "커스텀 프레임 목록 조회 실패",
+                        },
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
+                # 데이터 변환
+                custom_frames_data = [
+                    {
+                        "customFrameId": customframe.custom_frame_id,
+                        "customFrameTitle": customframe.custom_frame_title,
+                        "customFrameUrl": customframe.custom_frame_url,
+                        "bookmarks": customframe.bookmarks,
+                        "created_at": customframe.created_at.isoformat(),
+                    }
+                    for customframe in custom_frames if customframe.is_shared is True
+                ]
+
                 return Response(
                     {
-                        "code": "CSF_4041",
-                        "status": 404,
-                        "message": "커스텀 프레임 목록 조회 실패",
+                        "code": "CSF_2001",
+                        "status": 200,
+                        "message": "커스텀 프레임 목록 조회 성공",
+                        "data": {"customFrames": custom_frames_data},
                     },
-                    status=status.HTTP_404_NOT_FOUND,
+                    status=status.HTTP_200_OK,
                 )
 
-            custom_frames_data = [
-                {
-                    "customFrameId": frame.custom_frame_id,
-                    "customFrameTitle": frame.custom_frame_title,
-                    "customFrameUrl": frame.custom_frame_url,
-                    "bookmarks": frame.bookmarks,
-                    "created_at": frame.created_at.isoformat(),
-                }
-                for frame in custom_frames
-            ]
+            except Exception as e:
+                return Response(
+                    {
+                        "code": "CSF_5001",
+                        "status": 500,
+                        "message": f"서버 오류: {str(e)}",
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
-            return Response(
-                {
-                    "code": "CSF_2001",
-                    "status": 200,
-                    "message": "커스텀 프레임 목록 조회 성공",
-                    "data": {"customFrames": custom_frames_data},
-                },
-                status=status.HTTP_200_OK,
-            )
-        except Exception as e:
-            return Response(
-                {
-                    "code": "CSF_5001",
-                    "status": 500,
-                    "message": f"서버 오류: {str(e)}",
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
