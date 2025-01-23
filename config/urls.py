@@ -5,6 +5,13 @@ from drf_yasg import openapi
 from django.conf.urls.static import static
 from django.conf import settings
 
+import logging
+from django_redis import get_redis_connection
+
+logger = logging.getLogger("inframe")
+redis_conn = get_redis_connection("default")
+
+
 schema_view = get_schema_view(
     openapi.Info(
         title="Inframe API",

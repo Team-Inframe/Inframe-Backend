@@ -11,8 +11,9 @@ services:
       - "8000:8000"
     depends_on:
       - rabbitmq
+      - redis
     env_file:
-      - .env
+      - .env    
     command: >
       sh -c "python manage.py collectstatic --noinput &&
             python manage.py makemigrations --noinput &&
@@ -27,9 +28,20 @@ services:
         - action: sync
           path: ./manage.py
           target: /Inframe-Backend/manage.py
+    networks:
+      - inf
+      
+  redis:
+    container_name: redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - inf
 
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -40,30 +52,34 @@ services:
       - inf
 
   celery:
+    container_name: celery-worker
     build:
       context: .
     command: >
-      sh -c "celery -A config worker --loglevel=info &&
-            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
+      celery -A config worker --loglevel=info
     depends_on:
       - rabbitmq
+      - redis
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
     networks:
       - inf
 
   celery-beat:
+    container_name: celery-beat
     build:
       context: .
     command:  >
-      sh -c "celery -A config worker --loglevel=info &&
-            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
+      celery -A config beat --loglevel=info
     depends_on:
       - rabbitmq
+      - redis
     networks:
       - inf
 
 volumes:
   static_volume:
-
+  redis_data:
 networks:
   inf:
     driver: bridge
