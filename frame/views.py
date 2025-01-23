@@ -35,10 +35,24 @@ class CreateFrameView(APIView):
         operation_description="form-data로 이미지 파일과 카메라 크기를 업로드하여 프레임을 생성합니다.",
         manual_parameters=[
             openapi.Parameter(
-                'frame_img',
+                'frame_url',
                 openapi.IN_FORM,
-                description='프레임 이미지 파일',
+                description='완성된 배경 프레임',
                 type=openapi.TYPE_FILE,
+                required=True
+            ),
+            openapi.Parameter(
+                'frame_bg',
+                openapi.IN_FORM,
+                description='배경 프레임의 배경 이미지',
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'basic_frame_id',
+                openapi.IN_FORM,
+                description='베이직 프레임 아이디',
+                type=openapi.TYPE_INTEGER,
                 required=True
             ),
             openapi.Parameter(
@@ -68,7 +82,7 @@ class CreateFrameView(APIView):
                             type=openapi.TYPE_OBJECT,
                             properties={
                                 "frame_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="프레임 ID"),
-                                "frame_img_url": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 이미지 URL"),
+                                "frame_url": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 이미지 URL"),
                             },
                         ),
                     },
@@ -91,10 +105,11 @@ class CreateFrameView(APIView):
         logger.info(f"Request Data: {request.data}")
         logger.info(f"Request Files: {request.FILES}")
 
-        # form-data에서 값 가져오기
         camera_width = request.data.get("camera_width")
         camera_height = request.data.get("camera_height")
-        frame_img = request.FILES.get("frame_img")
+        frame_bg = request.data.get("frame_bg")
+        frame_url = request.data.get("frame_url")
+        basic_frame_id = request.data.get("basic_frame_id")
 
         if not camera_width or not camera_height:
             return Response(
@@ -106,31 +121,31 @@ class CreateFrameView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not frame_img:
+        if not frame_bg:
             return Response(
                 {
                     "code": "FRA_4002",
                     "status": 400,
-                    "message": "이미지 파일이 누락되었습니다.",
+                    "message": "배경 이미지 누락",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            image_data = frame_img.read()
+            image_data = frame_url.read()
             img = Image.open(BytesIO(image_data))
 
             if img.mode == 'RGBA':
                 img = img.convert('RGB')
 
-            frame_img_name = f"frame_{int(time.time())}.jpg"
+            frame_url_name = f"frame_{int(time.time())}.jpg"
             img_file = BytesIO()
             img.save(img_file, format="JPEG")
             img_file.seek(0)
 
             frame_url = upload_file_to_s3(
                 file=img_file,
-                key=f"basic-frames/{frame_img_name}",
+                key=f"basic-frames/{frame_url_name}",
                 ExtraArgs={
                     "ContentType": "image/jpeg",
                     "ACL": "public-read",
@@ -149,6 +164,8 @@ class CreateFrameView(APIView):
             # 프레임 데이터 DB 저장
             frame = Frame.objects.create(
                 frame_url=frame_url,
+                frame_bg=frame_bg,
+                basic_frame_id=basic_frame_id,
                 camera_width=int(camera_width),
                 camera_height=int(camera_height),
             )
