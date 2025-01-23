@@ -109,21 +109,16 @@ class CustomFrameCreateView(APIView):
     )
     def post(self, request):
         try:
-            # POST 데이터 가져오기 (JSON 데이터가 아니라면 request.POST 사용)
-            data_str = request.POST.get("data")
-            if not data_str:
-                return Response({"code": "CSF_4001", "message": "요청 데이터가 없습니다."}, status=400)
+            # POST 데이터 가져오기 (JSON 데이터가 아니라면 request.data 사용)
+            custom_frame_title = request.data.get("custom_frame_title")
+            is_shared = request.data.get("is_shared")
+            is_shared = True if is_shared == "true" else False if is_shared == "false" else is_shared  # 변환 추가
 
-            data = json.loads(data_str)
-
-            logger.info(f"data : {data}")
-            logger.info(f"user_id : {data.get('user_id')}")
-
-            # 이미지 파일 처리
             custom_frame_img = request.FILES.get("custom_frame_img")
             if not custom_frame_img:
                 return Response({"code": "CSF_4002", "message": "이미지가 전송되지 않았습니다."}, status=400)
 
+            # 이미지 파일 처리
             image_data = custom_frame_img.read()
             img = Image.open(BytesIO(image_data))
             custom_frame_img_name = f"custom_frame_{int(time.time())}.jpg"
@@ -131,7 +126,6 @@ class CustomFrameCreateView(APIView):
             img.save(img_file, format="JPEG")
             img_file.seek(0)
 
-            # S3 업로드
             custom_frame_img_url = upload_file_to_s3(
                 file=img_file,
                 key=f"custom-frames/{custom_frame_img_name}",
@@ -139,11 +133,13 @@ class CustomFrameCreateView(APIView):
             )
 
             # 유저와 프레임 조회
-            user = User.objects.filter(user_id=data.get("user_id")).first()
+            user_id = request.data.get("user")
+            user = User.objects.filter(user_id=user_id).first()
             if not user:
                 return Response({"code": "CSF_4041", "message": "해당 유저를 찾을 수 없습니다."}, status=404)
 
-            frame = Frame.objects.filter(frame_id=data.get("frame_id")).first()
+            frame_id = request.data.get("frame")
+            frame = Frame.objects.filter(frame_id=frame_id).first()
             if not frame:
                 return Response({"code": "CSF_4042", "message": "해당 프레임을 찾을 수 없습니다."}, status=404)
 
@@ -151,15 +147,15 @@ class CustomFrameCreateView(APIView):
             custom_frame = CustomFrame.objects.create(
                 user=user,
                 frame=frame,
-                custom_frame_title=data.get("custom_frame_title"),
+                custom_frame_title=custom_frame_title,
                 custom_frame_url=custom_frame_img_url,
-                is_shared=data.get("is_shared"),
+                is_shared=is_shared,
                 is_bookmarked=False,
                 is_deleted=False,
             )
 
-            # Sticker 데이터 처리
-            stickers = data.get("stickers", [])
+            # 스티커 처리
+            stickers = request.data.get("stickers", [])
             for sticker_data in stickers:
                 sticker_id = sticker_data.get("sticker_id")
                 sticker = Sticker.objects.filter(sticker_id=sticker_id).first()
@@ -177,7 +173,6 @@ class CustomFrameCreateView(APIView):
                     is_deleted=False,
                 )
 
-            # 성공 응답
             return Response(
                 {
                     "code": "CSF_2001",
@@ -325,16 +320,3 @@ class CustomFrameListView(APIView):
                 )
 
 
-class CustomFrameHotView(APIView):
-    def get(self, request):
-        hot_custom_frames = get_hot_custom_frames()
-        return Response(hot_custom_frames)
-
-
-def get_hot_custom_frames():
-    data = []
-    for i in range(1, 4):
-        custom_frame_data = redis_conn.hgetall(f"hot_custom_frame:{i}")
-        custom_frame_data = {key.decode("utf-8"): value.decode("utf-8") for key, value in custom_frame_data.items()}
-        data.append(custom_frame_data)
-    return data
