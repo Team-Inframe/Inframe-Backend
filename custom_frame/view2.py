@@ -35,7 +35,8 @@ class CustomFrameDetailView(APIView):
                         "data": {
                             "customFrameTitle": "string",
                             "customFrameUrl": "string",
-                            "frameId": 0,
+                            "customFrameBg": "string",
+                            "basicFrameId": 0,
                             "bookmarks": 0,
                             "stickers": [
                                 {
@@ -71,11 +72,9 @@ class CustomFrameDetailView(APIView):
     )
     def get(self, request, custom_frame_id):
         try:
-            # 커스텀 프레임 조회
             custom_frame = CustomFrame.objects.get(pk=custom_frame_id)
             logger.info(f"custom_frame: {custom_frame}")
 
-            # 연관된 스티커 조회
             customFrameStickers = CustomFrameSticker.objects.filter(custom_frame=custom_frame, is_deleted=False)
                                   
             sticker_list = [                
@@ -97,7 +96,8 @@ class CustomFrameDetailView(APIView):
                 "data": {
                     "customFrameTitle": custom_frame.custom_frame_title,
                     "customFrameUrl": custom_frame.custom_frame_url,
-                    "frameId": custom_frame.frame.frame_id,
+                    "customFrameBg": custom_frame.frame.frame_bg,
+                    "basicFrameId": custom_frame.frame.basic_frame_id,
                     "bookmarks": custom_frame.bookmarks,
                     "stickers": sticker_list,
                 },

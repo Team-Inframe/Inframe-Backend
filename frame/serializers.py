@@ -5,11 +5,11 @@ from .models import Frame
 class FrameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Frame
-        fields = ['frame_id', 'frame_url', 'camera_width', 'camera_height']
+        fields = ['frame_id', 'frame_url', 'frame_bg', 'basic_frame_id', 'camera_width', 'camera_height']
 
 
 class CreateFrameRequestSerializer(serializers.Serializer):
-    frame_img = serializers.FileField(required=True)  # 이미지 파일 필드
+    frame_url = serializers.URLField(required=True)  # 이미지 파일 필드
     camera_width = serializers.IntegerField(required=True)  # 카메라 가로 크기 필드
     camera_height = serializers.IntegerField(required=True)  # 카메라 세로 크기 필드
 
