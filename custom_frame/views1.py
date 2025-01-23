@@ -1,3 +1,4 @@
+from celery import shared_task
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,8 +14,11 @@ import time
 import logging
 import json
 from rest_framework.parsers import MultiPartParser
+import redis
+from django_redis import get_redis_connection
 
 logger = logging.getLogger("inframe")
+redis_conn = get_redis_connection("default")
 
 
 class CustomFrameCreateView(APIView):
@@ -269,3 +273,19 @@ class CustomFrameListView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+            
+class CustomFrameHotView(APIView):
+    def get(self, request):
+        hot_custom_frames = get_hot_custom_frames()        
+        return Response(hot_custom_frames)
+    
+def get_hot_custom_frames():
+    data = []
+    for i in range(1,4):
+        custom_frame_data = redis_conn.hgetall(f"hot_custom_frame:{i}")        
+        custom_frame_data = {key.decode("utf-8"): value.decode("utf-8") for key, value in custom_frame_data.items()}
+        data.append(custom_frame_data)
+    return data    
+
+     
+        
