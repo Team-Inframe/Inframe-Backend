@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'user',
     'custom_frame',
     'photo',
-    'corsheaders',
+    'corsheaders',    
 ]
 
 MIDDLEWARE = [
@@ -109,9 +109,10 @@ STORAGES = {
     },
 }
 
-CELERY_BROKER_URL = 'pyamqp://guest:guest@rabbitmq//'
-CELERY_RESULT_BACKEND = 'django-db'
+CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq//'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/1'
 CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_ENABLE_UTC=False
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 
@@ -156,6 +157,16 @@ LOGGING = {
             'propagate': True,
         },
     },
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        'LOCATION': 'redis://redis:6379/1',
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
 }
 
 LANGUAGE_CODE = 'ko-kr'

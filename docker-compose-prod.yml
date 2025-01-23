@@ -41,41 +41,27 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - inf
+      - REDIS_HOST=${EC2_HOST}
+      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
 
   celery:
     build:
       context: .
     command:  >
-      sh -c "celery -A config worker --loglevel=info &&
-            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
-    depends_on:
-      - rabbitmq
-    networks:
-      - inf
+      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+      - REDIS_HOST=${EC2_HOST}
 
   celery-beat:
     build:
       context: .
     command:  >
-      sh -c "celery -A config worker --loglevel=info &&
-            wait-for-it rabbitmq:5672 -- celery -A config worker --loglevel=info"
-    depends_on:
-      - rabbitmq
-    networks:
-      - inf
+      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+      - REDIS_HOST=${EC2_HOST}
 
 volumes:
   static_volume:
