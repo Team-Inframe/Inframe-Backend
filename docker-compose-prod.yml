@@ -25,7 +25,7 @@ services:
 
   backend:
     container_name: backend
-    image: inframe2/hyeonho2:0.101.80
+    image: inframe2/hyeonho2:0.104.86
     env_file:
       - .env
     command: >
@@ -41,27 +41,27 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-#    environment:
-#      - REDIS_HOST=${EC2_HOST}
-#      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
-#
-#  celery:
-#    build:
-#      context: .
-#    command:  >
-#      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
-#    environment:
-#      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
-#      - REDIS_HOST=${EC2_HOST}
-#
-#  celery-beat:
-#    build:
-#      context: .
-#    command:  >
-#      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
-#    environment:
-#      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
-#      - REDIS_HOST=${EC2_HOST}
+    environment:
+     - REDIS_HOST=${EC2_HOST}
+     - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+     
+  celery:
+    build:
+      context: .
+    command:  >
+      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
+    environment:
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+      - REDIS_HOST=${EC2_HOST}
+
+  celery-beat:
+    build:
+      context: .
+    command:  >
+      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config beat --loglevel=info"
+    environment:
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+      - REDIS_HOST=${EC2_HOST}
 
 volumes:
   static_volume:
