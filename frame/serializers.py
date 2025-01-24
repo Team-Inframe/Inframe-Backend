@@ -5,19 +5,11 @@ from .models import Frame
 class FrameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Frame
-        fields = ['frame_id', 'frame_url', 'frame_bg', 'basic_frame_id', 'camera_width', 'camera_height']
+        fields = ['frame_id', 'frame_url', 'frame_bg', 'basic_frame_id']
 
 
 class CreateFrameRequestSerializer(serializers.Serializer):
-    frame_url = serializers.URLField(required=True)  # 이미지 파일 필드
-    camera_width = serializers.IntegerField(required=True)  # 카메라 가로 크기 필드
-    camera_height = serializers.IntegerField(required=True)  # 카메라 세로 크기 필드
-
-    def validate(self, data):
-        # 카메라 너비와 높이가 모두 존재하는지 확인
-        if not data.get('cameraWidth') or not data.get('cameraHeight'):
-            raise serializers.ValidationError("카메라 너비와 높이는 필수 항목입니다.")
-        return data
+    frame_url = serializers.URLField(required=True)
 
 class CreateFrameImgSerializer(serializers.Serializer):
     prompt = serializers.CharField(required=False, allow_blank=True)

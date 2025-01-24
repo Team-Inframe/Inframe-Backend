@@ -55,20 +55,6 @@ class CreateFrameView(APIView):
                 type=openapi.TYPE_INTEGER,
                 required=True
             ),
-            openapi.Parameter(
-                'camera_width',
-                openapi.IN_FORM,
-                description='카메라의 너비',
-                type=openapi.TYPE_INTEGER,
-                required=True
-            ),
-            openapi.Parameter(
-                'camera_height',
-                openapi.IN_FORM,
-                description='카메라의 높이',
-                type=openapi.TYPE_INTEGER,
-                required=True
-            ),
         ],
         responses={
             200: openapi.Response(
@@ -105,21 +91,9 @@ class CreateFrameView(APIView):
         logger.info(f"Request Data: {request.data}")
         logger.info(f"Request Files: {request.FILES}")
 
-        camera_width = request.data.get("camera_width")
-        camera_height = request.data.get("camera_height")
         frame_bg = request.data.get("frame_bg")
         frame_url = request.data.get("frame_url")
         basic_frame_id = request.data.get("basic_frame_id")
-
-        if not camera_width or not camera_height:
-            return Response(
-                {
-                    "code": "FRA_4001",
-                    "status": 400,
-                    "message": "카메라 크기 정보 누락",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         if not frame_bg:
             return Response(
@@ -166,8 +140,6 @@ class CreateFrameView(APIView):
                 frame_url=frame_url,
                 frame_bg=frame_bg,
                 basic_frame_id=basic_frame_id,
-                camera_width=int(camera_width),
-                camera_height=int(camera_height),
             )
 
             response_data = {
