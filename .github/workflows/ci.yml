@@ -37,7 +37,7 @@ jobs:
         PR_NUMBER: ${{ steps.get_pr_number.outputs.PR_NUMBER }}
       run: |
         if [ "${{ github.ref_name }}" == "develop" ]; then 
-          DOCKER_IMAGE_TAG="1.1.$PR_NUMBER"
+          DOCKER_IMAGE_TAG="1.1.$(date +'%Y%m%d%H%M%S')"
         else # 그냥 풀 리퀘 요청인 경우
           DOCKER_IMAGE_TAG="0.${{ github.event.pull_request.number }}.${{ github.run_number }}"
         fi
