@@ -82,7 +82,7 @@ class Login(APIView):
         operation_description="사용자가 이메일과 비밀번호로 로그인하는 API",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            properties={
+            properties={                
                 'email': openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
                 'password': openapi.Schema(type=openapi.TYPE_STRING, description="User password"),
             },
@@ -96,6 +96,7 @@ class Login(APIView):
                         "code": "MEM_2001",
                         "data": {
                             "user_id": 1,
+                            "username": "username",
                         },
                         "message": "로그인에 성공했습니다.",
                     }
@@ -125,7 +126,7 @@ class Login(APIView):
         client_ip = request.META.get('REMOTE_ADDR', None)
 
         email = request.data.get('email', None)
-        password = request.data.get('password', None)
+        password = request.data.get('password', None)        
 
         if not email or not password:
             # 필수 필드 누락
@@ -163,6 +164,7 @@ class Login(APIView):
             "code": "MEM_2001",
             "data": {
                 "user_id": user.user_id,
+                "username": user.username,
             },
             "message": "로그인에 성공했습니다.",
         }
