@@ -11,6 +11,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 SERVER_URL = os.getenv("SERVER_URL")
+EC2_HOST = env('EC2_HOST')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -110,8 +111,8 @@ STORAGES = {
     },
 }
 
-CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq//'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/1'
+CELERY_BROKER_URL = f'amqp://inframe:inframe@{EC2_HOST}:5672//'
+CELERY_RESULT_BACKEND = f"redis://{EC2_HOST}:6379/1"
 CELERY_TIMEZONE = 'Asia/Seoul'
 CELERY_ENABLE_UTC=False
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
@@ -163,7 +164,7 @@ LOGGING = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        'LOCATION': 'redis://redis:6379/1',
+        'LOCATION': f"redis://{EC2_HOST}:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
