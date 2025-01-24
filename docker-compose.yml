@@ -8,10 +8,7 @@ services:
       - static_volume:/Inframe-Backend/static
 
     ports:
-      - "8000:8000"
-    depends_on:
-      - rabbitmq
-      - redis
+      - "8000:8000"    
     env_file:
       - .env    
     command: >
@@ -30,56 +27,34 @@ services:
           target: /Inframe-Backend/manage.py
     networks:
       - inf
-      
-  redis:
-    container_name: redis
-    image: redis:latest
-    ports:
-      - "6379:6379"
-    networks:
-      - inf
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - inf
+      - REDIS_HOST=${EC2_HOST}    
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
 
   celery:
-    container_name: celery-worker
     build:
       context: .
-    command: >
+    command:  >
       celery -A config worker --loglevel=info
-    depends_on:
-      - rabbitmq
-      - redis
     environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+      - REDIS_HOST=${EC2_HOST}
     networks:
       - inf
 
   celery-beat:
-    container_name: celery-beat
     build:
       context: .
     command:  >
       celery -A config beat --loglevel=info
-    depends_on:
-      - rabbitmq
-      - redis
+    environment:
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+      - REDIS_HOST=${EC2_HOST}
     networks:
       - inf
 
 volumes:
   static_volume:
-  redis_data:
 networks:
   inf:
     driver: bridge
