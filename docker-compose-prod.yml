@@ -41,10 +41,10 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-    environment:
-      - REDIS_HOST=${EC2_HOST}
-      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
-
+#    environment:
+#      - REDIS_HOST=${EC2_HOST}
+#      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+#
 #  celery:
 #    build:
 #      context: .
