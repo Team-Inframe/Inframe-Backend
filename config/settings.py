@@ -111,8 +111,6 @@ STORAGES = {
     },
 }
 
-CLOUDFRONT_URL = env("CLOUDFRONT_URL")
-
 CELERY_BROKER_URL = f'amqp://inframe:inframe@{EC2_HOST}:5672//'
 CELERY_RESULT_BACKEND = f"redis://{EC2_HOST}:6379/1"
 CELERY_TIMEZONE = 'Asia/Seoul'
