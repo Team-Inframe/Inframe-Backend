@@ -50,6 +50,7 @@ services:
   celery:
     build:
       context: .
+    container_name: celery
     command:  >
       sh -c "celery -A config worker --loglevel=info"
     environment:
@@ -58,9 +59,11 @@ services:
     networks:
       - inf
 
+
   celery-beat:
     build:
-      context: .
+      context: .      
+    container_name: celery-beat
     command:  >
       sh -c "celery -A config beat --loglevel=info"
     environment:
@@ -68,6 +71,7 @@ services:
       - REDIS_HOST=${EC2_HOST}
     networks:
       - inf
+
 
 volumes:
   static_volume:
