@@ -43,25 +43,31 @@ services:
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     environment:
      - REDIS_HOST=${EC2_HOST}
-     - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+     - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+    networks:
+      - inf
      
   celery:
     build:
       context: .
     command:  >
-      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
+      sh -c "celery -A config worker --loglevel=info"
     environment:
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
+    networks:
+      - inf
 
   celery-beat:
     build:
       context: .
     command:  >
-      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config beat --loglevel=info"
+      sh -c "celery -A config beat --loglevel=info"
     environment:
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
+    networks:
+      - inf
 
 volumes:
   static_volume:
