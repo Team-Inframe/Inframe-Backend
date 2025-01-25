@@ -62,3 +62,4 @@ wcwidth==0.2.13
 django-cors-headers==4.6.0
 redis==5.0.0
 django-redis==5.0.0
+django-prometheus==2.3.1

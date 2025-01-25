@@ -1,6 +1,7 @@
 services:
   backend:
     container_name: backend
+
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,7 +14,8 @@ services:
       - rabbitmq
       - redis
     env_file:
-      - .env    
+      - .env
+    restart: always
     command: >
       sh -c "python manage.py collectstatic --noinput &&
             python manage.py makemigrations --noinput &&
@@ -30,7 +32,10 @@ services:
           target: /Inframe-Backend/manage.py
     networks:
       - inf
-      
+
+
+
+
   redis:
     container_name: redis
     image: redis:latest
@@ -76,6 +81,7 @@ services:
       - redis
     networks:
       - inf
+
 
 volumes:
   static_volume:

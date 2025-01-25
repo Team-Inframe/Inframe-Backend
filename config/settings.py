@@ -29,7 +29,8 @@ INSTALLED_APPS = [
     'user',
     'custom_frame',
     'photo',
-    'corsheaders',    
+    'corsheaders',
+    'django_prometheus',
 ]
 
 MIDDLEWARE = [
@@ -41,6 +42,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    # All your other middlewares go here, including the default
+    # middlewares like SessionMiddleware, CommonMiddleware,
+    # CsrfViewmiddleware, SecurityMiddleware, etc.
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -74,7 +80,7 @@ CORS_ALLOW_CREDENTIALS = True
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
-    'default': {
+    'default': {  # 기본 데이터베이스
         'ENGINE': env('MYSQL_ENGINE'),
         'NAME': env('MYSQL_DATABASE'),
         'USER': env('MYSQL_USER'),
@@ -84,8 +90,9 @@ DATABASES = {
         'OPTIONS': {
             'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"'
         }
-    }
+    },
 }
+
 
 STORAGES = {
     "default": {
