@@ -105,7 +105,7 @@ services:
     build:
       context: .
     command:  >
-      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
+      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config beat --loglevel=info"
     environment:
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
