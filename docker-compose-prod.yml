@@ -9,30 +9,48 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
+      - "--providers.docker.network=inf"
       - "--entryPoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--metrics.prometheus.entryPoint=metrics"
+      - "--entryPoints.metrics.address=:8091"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000"
+      - "--api.dashboard=true"
 
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
+      - "8091:8091"
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - inf
 
   backend:
     container_name: backend
     image: inframe2/hyeonho2:0.112.102
+    volumes:
+      - static_volume:/Inframe-Backend/static
     env_file:
       - .env
+    ports:
+      - "8000:8000"
+
+    restart: always
     command: >
       sh -c "python manage.py collectstatic --noinput &&
             python manage.py makemigrations --noinput &&
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
