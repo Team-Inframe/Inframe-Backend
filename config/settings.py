@@ -90,7 +90,7 @@ DATABASES = {
 
 STORAGES = {
     "default": {
-        "BACKEND": "config.utils.CloudFrontS3Storage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
             "access_key": env("AWS_ACCESS_KEY_ID"),
             "secret_key": env("AWS_SECRET_ACCESS_KEY"),
@@ -101,7 +101,7 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        "BACKEND": "config.utils.CloudFrontS3Storage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
             "access_key": env("AWS_ACCESS_KEY_ID"),
             "secret_key": env("AWS_SECRET_ACCESS_KEY"),
