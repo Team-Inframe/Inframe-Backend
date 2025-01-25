@@ -4,30 +4,75 @@ services:
     container_name: traefik
     env_file:
       - .env
+    networks:
+      - inf
+
     command:
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=inf"
       - "--entryPoints.web.address=:80"
       - "--entryPoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--metrics.prometheus.entryPoint=metrics"
+      - "--entryPoints.metrics.address=:8091"
+      - "--metrics.prometheus.addEntryPointsLabels=true" # 라벨링 추가
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus=true" # 메트릭 활성화
+      - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000"
+      - "--api.dashboard=true"
 
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
+      - "8091:8091"
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
+
+  prometheus:
+      image: prom/prometheus:v2.45.6
+      container_name: prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+      networks:
+        - inf
+
+
+  grafana:
+    image: grafana/grafana:9.5.20
+    container_name: grafana
+    volumes:
+      - ./grafana:/etc/grafana/provisioning
+      - ./grafana/data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - inf
+
+
   backend:
     container_name: backend
-    image: inframe2/hyeonho2:1.1.20250125142716
+    image: inframe2/hyeonho2:1.1.
+    volumes:
+      - static_volume:/Inframe-Backend/static
+
     env_file:
       - .env
+    ports:
+      - "8000:8000"
+
+    restart: always
     command: >
       sh -c "python manage.py collectstatic --noinput &&
             python manage.py makemigrations --noinput &&
@@ -42,26 +87,29 @@ services:
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     environment:
-     - REDIS_HOST=${EC2_HOST}
-     - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
-     
+      - REDIS_HOST=${EC2_HOST}
+      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+    networks:
+      - inf
+
   celery:
     build:
       context: .
     command:  >
       sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
     environment:
-      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
 
   celery-beat:
     build:
       context: .
     command:  >
-      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config beat --loglevel=info"
+      sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
     environment:
-      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
+
 
 volumes:
   static_volume:
