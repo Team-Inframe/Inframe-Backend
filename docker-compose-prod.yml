@@ -63,7 +63,7 @@ services:
 
   backend:
     container_name: backend
-    image: inframe2/hyeonho2:1.1.
+    image: inframe2/hyeonho2:0.112.99
     volumes:
       - static_volume:/Inframe-Backend/static
 
@@ -98,7 +98,7 @@ services:
     command:  >
       sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
     environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
 
   celery-beat:
@@ -107,7 +107,7 @@ services:
     command:  >
       sh -c "wait-for-it ${EC2_HOST}:5672 -- celery -A config worker --loglevel=info"
     environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@${EC2_HOST}:5672//
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
 
 
