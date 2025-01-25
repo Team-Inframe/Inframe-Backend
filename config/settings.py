@@ -90,7 +90,7 @@ DATABASES = {
 
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "config.utils.CloudFrontS3Storage",
         "OPTIONS": {
             "access_key": env("AWS_ACCESS_KEY_ID"),
             "secret_key": env("AWS_SECRET_ACCESS_KEY"),
@@ -101,7 +101,7 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "config.utils.CloudFrontS3Storage",
         "OPTIONS": {
             "access_key": env("AWS_ACCESS_KEY_ID"),
             "secret_key": env("AWS_SECRET_ACCESS_KEY"),
@@ -110,6 +110,8 @@ STORAGES = {
         },
     },
 }
+
+CLOUDFRONT_URL = env("CLOUDFRONT_URL")
 
 CELERY_BROKER_URL = f'amqp://inframe:inframe@{EC2_HOST}:5672//'
 CELERY_RESULT_BACKEND = f"redis://{EC2_HOST}:6379/1"
