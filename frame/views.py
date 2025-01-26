@@ -250,7 +250,7 @@ class CreateAiFrameView(APIView):
         from django.core.files.storage import default_storage
         file_path = default_storage.save(file_name, image)
         return default_storage.url(file_path)
-        
+
 class FrameDetailView(APIView):
     @swagger_auto_schema(
         operation_summary="초기 프레임 조회 API",
