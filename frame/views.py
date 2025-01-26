@@ -14,6 +14,8 @@ from rest_framework import status
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import random
+from django.http import JsonResponse
 
 from sticker.serializer import CreateStickerSerializer
 from .models import Frame
@@ -209,10 +211,9 @@ class CreateAiFrameView(APIView):
             translator = GoogleTranslator(source='ko', target='en')
             english_prompt = translator.translate(prompt)
 
-            detailed_prompt = (
-                f"A animated-style illustration of {english_prompt}, "
-                f"with the text {english_prompt} creatively incorporated into the borders of the image. "
-            )
+            detailed_prompt =  self.example_view(english_prompt)
+            if not detailed_prompt or not isinstance(detailed_prompt, str):
+                raise ValueError("Detailed prompt must be a valid string.")
 
             response = client.images.generate(
                 prompt=detailed_prompt,
@@ -250,7 +251,25 @@ class CreateAiFrameView(APIView):
         from django.core.files.storage import default_storage
         file_path = default_storage.save(file_name, image)
         return default_storage.url(file_path)
-        
+
+    def example_view(self, english_prompt):
+        # 랜덤 숫자 생성 (1, 2, 3 중 하나)
+        i = random.randint(1, 3)
+
+        # 랜덤 값에 따른 메시지 생성
+        if i == 1:
+            message = f"{english_prompt} are in the city"
+        elif i == 2:
+            message = f"{english_prompt} are in the countryside"
+        elif i == 3:
+            message = f"{english_prompt} are in the sea"
+        else:
+            message = "Invalid selection"
+
+        # 메시지를 문자열로 반환
+        return message
+
+
 class FrameDetailView(APIView):
     @swagger_auto_schema(
         operation_summary="초기 프레임 조회 API",
