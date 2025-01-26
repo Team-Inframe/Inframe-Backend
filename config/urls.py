@@ -20,7 +20,7 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    url=f"{settings.SERVER_URL}/api/v1"
+    #url=f"{settings.SERVER_URL}/api/v1"
 )
 
 urlpatterns = [
@@ -33,6 +33,7 @@ urlpatterns = [
         path('frames/', include('frame.urls')),
         path('custom-frames/', include('custom_frame.urls')),
         path('photos/', include('photo.urls')),
+
     ])),
 ]
 

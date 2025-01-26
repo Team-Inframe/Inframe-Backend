@@ -198,3 +198,61 @@ class PhotoListView(APIView):
             "message": "사진 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
+class PhotoSingleView(APIView):
+    @swagger_auto_schema(
+        operation_summary="최종 사진 조회",
+        operation_description="최종 사진 조회",
+        manual_parameters=[
+            openapi.Parameter(
+                name="photo_id",
+                in_=openapi.IN_QUERY,
+                description="사진 아이디",
+                type =openapi.TYPE_INTEGER,
+                required = True,
+            ),
+        ],
+
+        responses = {
+            200: openapi.Response(
+                description="최종 사진 조회에 성공",
+                examples={
+                    "application/json": {
+                        "code": "PHO_2011",
+                        "message": "최종 사진 조회에 성공했습니다.",
+                        "photoUrl": "https://example-bucket.s3.amazonaws.com/example.jpg"
+                    }
+
+                },
+            ),
+            400: openapi.Response(
+                description="최종 사진 조회 실패",
+                examples={
+                    "application/json": {
+                        "code": "PHO_4001",
+                        "message": "최종 사진 조회 실패."
+                    }
+                }
+            ),
+        }
+    )
+    def get(self, request):
+        photo_id = request.query_params.get("photo_id")
+        photo = get_object_or_404(Photo, photo_id=photo_id)
+        photo_url = photo.photo_url
+
+
+        if not Photo.objects.filter(photo_id=photo_id).exists():
+            return Response({
+                "code": "PHO_2001",
+                "status": 400,
+                "messages": "조회 실패"
+            })
+        if Photo.objects.filter(photo_id=photo_id).exists():
+
+            return Response({
+                "code": "PHO_2001",
+                "status": 200,
+                "message": "사진 목록 조회 성공",
+                "photo_url": photo_url
+            }, status=status.HTTP_200_OK)
+
