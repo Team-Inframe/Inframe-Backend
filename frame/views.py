@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from io import BytesIO
-
+import random
 from deep_translator import GoogleTranslator
 from openai import OpenAI
 client = OpenAI()
@@ -209,10 +209,9 @@ class CreateAiFrameView(APIView):
             translator = GoogleTranslator(source='ko', target='en')
             english_prompt = translator.translate(prompt)
 
-            detailed_prompt = (
-                f"A animated-style illustration of {english_prompt}, "
-                f"with the text {english_prompt} creatively incorporated into the borders of the image. "
-            )
+            detailed_prompt = self.example_view(english_prompt)
+            if not detailed_prompt or not isinstance(detailed_prompt, str):
+                raise ValueError("Detailed prompt must be a valid string.")
 
             response = client.images.generate(
                 prompt=detailed_prompt,
@@ -246,10 +245,30 @@ class CreateAiFrameView(APIView):
         response = requests.get(url)
         response.raise_for_status()
         return BytesIO(response.content)
+
     def upload_to_s3(self, image, file_name):
         from django.core.files.storage import default_storage
         file_path = default_storage.save(file_name, image)
         return default_storage.url(file_path)
+
+    def example_view(self, prompt):
+        # 랜덤 숫자 생성 (1, 2, 3 중 하나)
+        i = random.randint(1, 3)
+
+        # 영어 프롬프트가 "dog"이면 메시지 생성
+
+        # 랜덤 값에 따른 메시지 생성
+        if i == 1:
+            message = f"Too many {prompt} are in the city. {prompt} are crowded. Top,bottom,frame covered with {prompt}"
+        elif i == 2:
+            message = f"Too many {prompt} are in the school. {prompt} are crowded. Top,bottom,frame covered with {prompt}"
+        elif i == 3:
+            message = f"Too many {prompt} are in the sea. {prompt} are crowded. Top,bottom,frame covered with {prompt}"
+        else:
+            message = "white."
+
+        return message
+
 
 class FrameDetailView(APIView):
     @swagger_auto_schema(
