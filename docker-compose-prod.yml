@@ -38,6 +38,10 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - inf
+    labels:
+      logging: "promtail"
+      logging_jobname: "traefiklogs"
+
 
   backend:
     container_name: backend
