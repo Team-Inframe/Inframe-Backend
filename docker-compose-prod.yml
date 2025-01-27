@@ -5,17 +5,16 @@ services:
     env_file:
       - .env
     command:
-      - "--log.level=DEBUG"
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
+      - "--providers.docker.network=inf"
       - "--entryPoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entryPoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
       - "--metrics.prometheus.entryPoint=metrics"
       - "--entryPoints.metrics.address=:8091"
       - "--metrics.prometheus.addEntryPointsLabels=true"
@@ -56,15 +55,17 @@ services:
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.backend.rule=Host(`api.inframe-server.store`)
-      - traefik.http.routers.backend.entrypoints=websecure
-      - traefik.http.routers.backend.tls.certresolver=letsencrypt
-      - traefik.http.services.backend.loadbalancer.server.port=8000
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
+      - "traefik.http.routers.backend.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
     environment:
       - REDIS_HOST=${EC2_HOST}
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
-     
+
   celery:
     build:
       context: .
@@ -77,7 +78,7 @@ services:
 
   celery-beat:
     build:
-      context: .      
+      context: .
     container_name: celery-beat
     command:  >
       sh -c "celery -A config beat --loglevel=info"
