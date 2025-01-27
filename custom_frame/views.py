@@ -195,7 +195,7 @@ class CustomMyFrameDetailView(APIView):
 
         frames = CustomFrame.objects.filter(user=user, is_deleted=False).annotate(
             date=TruncDate('created_at')
-        ).order_by('date')
+        ).order_by('-date')
         
         grouped_frames = {}
         for frame in frames:            
@@ -265,36 +265,40 @@ class MySavedFramesView(APIView):
             )
         ]
     )
-    def get(self, request,user_id):
-
+    def get(self, request, user_id):
         user = get_object_or_404(User, user_id=user_id)
-        
-        bookmarks = Bookmark.objects.filter(user=user, is_deleted=False).select_related('custom_frame')                       
-        
+
+        bookmarks = Bookmark.objects.filter(user=user, is_deleted=False).select_related('custom_frame')
+
+
         grouped_frames = {}
         for bookmark in bookmarks:
             frame = bookmark.custom_frame
-            logger.info(f"custom_frame: {frame}")    
-            date = frame.created_at.date().strftime('%Y.%m.%d')
+            logger.info(f"custom_frame: {frame}")
+            date = frame.created_at.date().strftime('%Y.%m.%d')  # 날짜 형식 변환
             if date not in grouped_frames:
                 grouped_frames[date] = []
 
             serialized_frame = CustomFrameSerializer(frame).data
             grouped_frames[date].append(serialized_frame)
-        
+
+        # 최신순 정렬
+        sorted_grouped_frames = sorted(grouped_frames.items(), key=lambda x: x[0], reverse=True)
+
         data = [
             {
                 "date": date,
-                "frames": frames
-            } for date, frames in grouped_frames.items()
+                "frames": frame_list
+            } for date, frame_list in sorted_grouped_frames
         ]
-                                        
+
         return Response({
             "code": "STG_2001",
             "status": 200,
             "message": "내가 저장한 프레임 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
+
 
 class BookmarkView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -445,20 +449,7 @@ class CustomFrameCreateView(APIView):
                 type=openapi.TYPE_BOOLEAN,
                 required=True
             ),
-            openapi.Parameter(
-                'is_bookmarked',
-                openapi.IN_FORM,
-                description='북마크 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            ),
-            openapi.Parameter(
-                'is_deleted',
-                openapi.IN_FORM,
-                description='삭제 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            )
+
         ],
         responses={
             200: openapi.Response(
@@ -533,8 +524,7 @@ class CustomFrameCreateView(APIView):
                 custom_frame_title=custom_frame_title,
                 custom_frame_url=custom_frame_img_url,
                 is_shared=is_shared,
-                is_bookmarked=False,
-                is_deleted=False,
+
             )
 
             # 스티커 처리
@@ -675,7 +665,7 @@ class CustomFrameListView(APIView):
                     "customFrameTitle": customframe.custom_frame_title,
                     "customFrameUrl": customframe.custom_frame_url,
                     "bookmarks": customframe.bookmarks,
-                    "created_at": customframe.created_at.isoformat(),
+                    "created_at": customframe.created_at.date().strftime('%Y.%m.%d'),
                 }
                 for customframe in custom_frames if customframe.is_shared is True
             ]
@@ -701,7 +691,7 @@ class CustomFrameListView(APIView):
             )
 
 
-            
+
 class CustomFrameHotView(APIView):
     @swagger_auto_schema(
         operation_summary="핫한 커스텀 프레임 목록 조회",
