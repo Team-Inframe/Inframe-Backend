@@ -66,8 +66,6 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "logging=promtail"
-      - "logging_jobname=djangolog"
     environment:
      - REDIS_HOST=${EC2_HOST}
      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//    
