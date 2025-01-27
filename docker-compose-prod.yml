@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:v2.9
     container_name: traefik
     env_file:
       - .env
@@ -9,7 +9,8 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
-      - "--providers.docker.network=inf"
+      - "--log.level=DEBUG"
+      - "--providers.docker.network=inframe-backend_inf"
       - "--entryPoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
@@ -39,25 +40,24 @@ services:
       - inf
     labels:
       logging: "promtail"
-      logging_jobname: "traefiklog"
+      logging_jobname: "traefiklogs"
+
 
   backend:
     container_name: backend
     volumes:
       - static_volume:/Inframe-Backend/static
-    image: inframe2/hyeonho2:1.1.20250127181958
+    image: inframe2/hyeonho2:1.1.20250127182918
     env_file:
       - .env
     ports:
       - "8000:8000"
-
     restart: always
     command: >
       sh -c "python manage.py collectstatic --noinput &&
             python manage.py makemigrations --noinput &&
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
-
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
@@ -66,12 +66,12 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "logging=promtail"
-      - "logging_jobname=djangolog"
     environment:
-     - REDIS_HOST=${EC2_HOST}
-     - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//    
-     
+      - REDIS_HOST=${EC2_HOST}
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+    networks:
+      - inf
+
   celery:
     build:
       context: .
@@ -84,7 +84,7 @@ services:
 
   celery-beat:
     build:
-      context: .      
+      context: .
     container_name: celery-beat
     command:  >
       sh -c "celery -A config beat --loglevel=info"
@@ -92,8 +92,28 @@ services:
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
 
+  grafana:
+    image: grafana/grafana:9.5.20
+    container_name: grafana
+    volumes:
+      - grafana_data:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+      - "traefik.http.routers.grafana.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    ports:
+      - "3000:3000"
+    networks:
+      - inf
+
 volumes:
   static_volume:
+  grafana_data:
 
 networks:
   inf:
