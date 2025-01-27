@@ -1,20 +1,41 @@
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:v2.9
     container_name: traefik
     env_file:
       - .env
     command:
-      - "--api.insecure=true"
+      - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
-      - "--providers.docker.network=inf"
+      - "--log.level=DEBUG"
+      - "--providers.docker.network=inframe-backend_inf"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--metrics.prometheus.entryPoint=metrics"
+      - "--entryPoints.metrics.address=:8091"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000"
+      - "--api.dashboard=true"
+#      - "--accesslog=true"
+#      - "--accesslog.bufferingsize=100"
+#      - "--accesslog.format=json"
+#      - "--accesslog.fields.defaultmode=keep"
+#      - "--accesslog.fields.headers.defaultmode=keep"
+#      - "--accesslog.fields.headers.names.X-Forwarded-For=keep"
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
       - "8091:8091"
     volumes:
+      - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - inf
@@ -37,10 +58,16 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
+      - "traefik.http.routers.backend.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
     environment:
       - REDIS_HOST=${EC2_HOST}
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
+    networks:
+      - inf
 
   celery:
     build:
