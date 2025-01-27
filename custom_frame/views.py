@@ -721,5 +721,95 @@ def get_hot_custom_frames():
         data.append(custom_frame_data)
     return data    
 
-     
-        
+
+class FileUploadAPIView(APIView):
+    parser_classes = [MultiPartParser]
+
+    @swagger_auto_schema(
+        operation_summary="커스텀 프레임 이미지 업로드 API",
+        operation_description="커스텀 프레임 이미지 Url 반환.",
+        manual_parameters=[
+            openapi.Parameter(
+                "file",
+                openapi.IN_FORM,
+                description="업로드할 파일",
+                type=openapi.TYPE_FILE,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="파일 업로드 성공",
+                examples={
+                    "application/json": {
+                        "code": "FILE_2001",
+                        "message": "파일 업로드 성공",
+                        "data": {
+                            "file_url": "string"
+                        }
+                    }
+                },
+            ),
+            400: openapi.Response(
+                description="파일 업로드 실패 (요청 오류)",
+                examples={
+                    "application/json": {
+                        "code": "FILE_4001",
+                        "message": "파일이 전송되지 않았습니다."
+                    }
+                },
+            ),
+            500: openapi.Response(
+                description="서버 오류 발생",
+                examples={
+                    "application/json": {
+                        "code": "FILE_5001",
+                        "message": "서버 오류 발생"
+                    }
+                },
+            ),
+        },
+    )
+    def post(self, request):
+        try:
+            uploaded_file = request.FILES.get("file")
+            if not uploaded_file:
+                return Response(
+                    {"code": "FILE_4001", "message": "파일이 전송되지 않았습니다."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            file_name = f"uploaded_file_{int(time.time())}_{uploaded_file.name}"
+
+            file_url = upload_file_to_s3(
+                file=uploaded_file,
+                key=f"uploads/{file_name}",
+                ExtraArgs={"ContentType": uploaded_file.content_type, "ACL": "public-read"},
+            )
+
+            if not file_url:
+                return Response(
+                    {
+                        "code": "FILE_5002",
+                        "message": "파일 업로드 실패",
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            return Response(
+                {
+                    "code": "FILE_2001",
+                    "message": "파일 업로드 성공",
+                    "data": {"file_url": file_url},
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "code": "FILE_5001",
+                    "message": f"서버 오류 발생: {str(e)}",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
