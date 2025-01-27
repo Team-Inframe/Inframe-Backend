@@ -33,7 +33,7 @@ services:
       - "8080:8080"
       - "8091:8091"
     volumes:
-      - "./letsencrypt:/letsencrypt"
+      - "traefik-certificates:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - inf
@@ -85,6 +85,7 @@ services:
 
 volumes:
   static_volume:
+  traefik-certificates:
 
 networks:
   inf:
