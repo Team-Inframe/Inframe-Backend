@@ -17,7 +17,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'update-hot-custom-frame': {
         'task': 'custom_frame.tasks.update_hot_custom_frame',
-        'schedule': crontab(minute='*/1'),
+        'schedule': crontab(hour=0, minute=0),
     },
 }
 
