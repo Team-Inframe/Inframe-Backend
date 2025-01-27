@@ -9,28 +9,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     networks:
-      - inf
-
-
-  grafana:
-    image: grafana/grafana:9.5.20
-    container_name: grafana
-    volumes:
-      - ./grafana:/etc/grafana/provisioning
-      - ./grafana/data:/var/lib/grafana
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
-      - "traefik.http.routers.grafana.middlewares=https-redirect"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-    ports:
-      - "3000:3000"
-    networks:
-      - inf
-
+      - inframe-backend_inf
 
   cadvisor: #서비스 이름
     image: gcr.io/cadvisor/cadvisor:v0.49.1 #이미지
@@ -43,7 +22,7 @@ services:
       - /sys:/sys:ro  #읽기 전용 데이터 - 커널, 하드웨어, 드라이버 정보 등등
       - /var/lib/docker/:/var/lib/docker:ro #읽기 전용 데이터 - 도커 정보 데이터
     networks:
-      - inf
+      - inframe-backend_inf
 
   node_exporter: #서비스 이름
     image: quay.io/prometheus/node-exporter:v1.8.1 #이미지
@@ -56,7 +35,7 @@ services:
     volumes:
       - '/:/host:ro,rslave' #읽기 전용 호스트 머신 데이터 (마운트 정보 포함 - rslave)
     networks:
-      - inf
+      - inframe-backend_inf
 
   loki:
     image: grafana/loki:latest
@@ -64,7 +43,7 @@ services:
       - 3100:3100
     command: -config.file=/etc/loki/local-config.yaml #기본 설정
     networks:
-      - inf
+      - inframe-backend_inf
 
   promtail:
     image: grafana/promtail:latest
@@ -79,10 +58,10 @@ services:
     depends_on:
       - loki
     networks:
-      - inf
+      - inframe-backend_inf
 
 
 networks:
-  inf:
+  inframe-backend_inf:
     external: true
 

@@ -8,13 +8,13 @@ scrape_configs:
       - targets: ['prometheus:9090']
   - job_name: 'django-data'
     static_configs:
-      - targets: ['django:8000']
+      - targets: ['backend:8000']
   - job_name: 'traefik-data'
     static_configs:
       - targets: ['traefik:8091']
   - job_name: 'cadvisor-data'
     static_configs:
       - targets: [ 'cadvisor:8080' ]
-  - job_name: 'node-exporter-data'
+  - job_name: 'node_exporter-data'
     static_configs:
-      - targets: [ 'node-exporter:9100' ]
+      - targets: [ 'node_exporter:9100' ]
