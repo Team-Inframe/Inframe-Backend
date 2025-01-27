@@ -22,17 +22,24 @@ services:
       - "--metrics.prometheus=true"
       - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000"
       - "--api.dashboard=true"
-
+      - "--accesslog=true"
+      - "--accesslog.bufferingsize=100"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.defaultmode=keep"
+      - "--accesslog.fields.headers.defaultmode=keep"
+      - "--accesslog.fields.headers.names.X-Forwarded-For=keep"
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
       - "8091:8091"
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - inf
+    labels:
+      logging: "promtail"
+      logging_jobname: "traefiklog"
 
   backend:
     container_name: backend
@@ -59,6 +66,8 @@ services:
       - "traefik.http.routers.backend.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "logging=promtail"
+      - "logging_jobname=djangolog"
     environment:
      - REDIS_HOST=${EC2_HOST}
      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//    

@@ -1,26 +1,88 @@
 services:
+  prometheus:
+    image: prom/prometheus:v2.45.6
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - inf
 
- prometheus:
-      image: prom/prometheus:v2.45.6
-      container_name: prometheus
-      ports:
-        - "9090:9090"
-      volumes:
-        - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      command:
-        - '--config.file=/etc/prometheus/prometheus.yml'
-      networks:
-        - inf
 
-
- grafana:
-   image: grafana/grafana:9.5.20
-   container_name: grafana
-   volumes:
+  grafana:
+    image: grafana/grafana:9.5.20
+    container_name: grafana
+    volumes:
       - ./grafana:/etc/grafana/provisioning
       - ./grafana/data:/var/lib/grafana
-   ports:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+      - "traefik.http.routers.grafana.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    ports:
       - "3000:3000"
-   networks:
+    networks:
       - inf
+
+
+  cadvisor: #서비스 이름
+    image: gcr.io/cadvisor/cadvisor:v0.49.1 #이미지
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro #읽기 전용 데이터 - 루트 파일 시스템
+      - /var/run:/var/run:rw #읽기 & 쓰기 - 런타임 데이터
+      - /sys:/sys:ro  #읽기 전용 데이터 - 커널, 하드웨어, 드라이버 정보 등등
+      - /var/lib/docker/:/var/lib/docker:ro #읽기 전용 데이터 - 도커 정보 데이터
+    networks:
+      - inf
+
+  node_exporter: #서비스 이름
+    image: quay.io/prometheus/node-exporter:v1.8.1 #이미지
+    container_name: node_exporter
+    ports:
+      - "9100:9100" #포트 9100 매핑
+    command:
+      - '--path.rootfs=/host' #루트 파일 시스템을 볼륨에 설정한 host/로 설정
+    restart: unless-stopped #멈추면 다시 시작
+    volumes:
+      - '/:/host:ro,rslave' #읽기 전용 호스트 머신 데이터 (마운트 정보 포함 - rslave)
+    networks:
+      - inf
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - 3100:3100
+    command: -config.file=/etc/loki/local-config.yaml #기본 설정
+    networks:
+      - inf
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/docker-config.yaml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro #도커 로그
+      - /var/run/docker.sock:/var/run/docker.sock #도커 소켓 (디몬)
+    command:
+      - -config.file=/etc/promtail/docker-config.yaml #설정파일
+      - -config.expand-env=true #환경변수 수집용. 안해도 됩니다.
+    depends_on:
+      - loki
+    networks:
+      - inf
+
+
+networks:
+  inf:
+    external: true
 
