@@ -177,7 +177,7 @@ class PhotoListView(APIView):
 
         photos = Photo.objects.filter(user=user, is_deleted=False).annotate(
             date=TruncDate('created_at')
-        ).order_by('date')
+        ).order_by('-date')
 
         grouped_photos = {}
         for photo in photos:        
