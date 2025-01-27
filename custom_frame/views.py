@@ -723,7 +723,7 @@ def get_hot_custom_frames():
     return data    
 
 
-class FileUploadAPIView(APIView):
+class CustomFrameUploadAPIView(APIView):
     parser_classes = [MultiPartParser]
 
     @swagger_auto_schema(
