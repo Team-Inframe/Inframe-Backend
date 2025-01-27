@@ -8,7 +8,8 @@ from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
+import logging
+logger = logging.getLogger("inframe")
 
 from photo.models import Photo
 from photo.serializer import CreatePhotoSerializer, PhotoListSerializer
@@ -176,7 +177,7 @@ class PhotoListView(APIView):
 
         photos = Photo.objects.filter(user=user, is_deleted=False).annotate(
             date=TruncDate('created_at')
-        ).order_by('date')
+        ).order_by('-date')
 
         grouped_photos = {}
         for photo in photos:        
@@ -198,3 +199,60 @@ class PhotoListView(APIView):
             "message": "사진 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
+class PhotoSingleView(APIView):
+    @swagger_auto_schema(
+        operation_summary="최종 사진 조회 API",
+        operation_description="최종 사진 조회",
+        responses={
+            200: openapi.Response(
+                description="최종 사진 조회 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="응답 코드"),
+                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="응답 메시지"),
+                        "data": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "photo_url": openapi.Schema(type=openapi.TYPE_STRING, description="최종 사진 URL"),
+                            },
+                        ),
+                    },
+                ),
+            ),
+            400: openapi.Response(
+                description="최종 사진 조회 실패",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="에러 코드"),
+                        "status": openapi.Schema(type=openapi.TYPE_INTEGER, description="HTTP 상태 코드"),
+                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="에러 메시지"),
+                    },
+                ),
+            ),
+        },
+    )
+    def get(self, request, photo_id):
+        try:
+            photo = Photo.objects.get(pk=photo_id)
+            logger.info(f"photo: {photo}")
+            response_data = {
+                "code": "PHO_2001",
+                "status": 200,
+                "message": "최종 사진 조회 성공",
+                "data": {
+                    "photo_id" : photo.photo_id,
+                    "photo_url": photo.photo_url,
+                },
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error creating photo: {str(e)}")
+            response_data = {
+                "code": "PHO_5002",
+                "status": 500,
+                "message": f"최종 사진 조회 실패: {str(e)}",
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

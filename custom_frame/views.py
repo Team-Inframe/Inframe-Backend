@@ -12,7 +12,7 @@ from PIL import Image
 import time
 import logging
 import json
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import redis
 from django_redis import get_redis_connection
 from django.shortcuts import get_object_or_404
@@ -195,7 +195,7 @@ class CustomMyFrameDetailView(APIView):
 
         frames = CustomFrame.objects.filter(user=user, is_deleted=False).annotate(
             date=TruncDate('created_at')
-        ).order_by('date')
+        ).order_by('-date')
         
         grouped_frames = {}
         for frame in frames:            
@@ -265,36 +265,40 @@ class MySavedFramesView(APIView):
             )
         ]
     )
-    def get(self, request,user_id):
-
+    def get(self, request, user_id):
         user = get_object_or_404(User, user_id=user_id)
-        
-        bookmarks = Bookmark.objects.filter(user=user, is_deleted=False).select_related('custom_frame')                       
-        
+
+        bookmarks = Bookmark.objects.filter(user=user, is_deleted=False).select_related('custom_frame')
+
+
         grouped_frames = {}
         for bookmark in bookmarks:
             frame = bookmark.custom_frame
-            logger.info(f"custom_frame: {frame}")    
-            date = frame.created_at.date().strftime('%Y.%m.%d')
+            logger.info(f"custom_frame: {frame}")
+            date = frame.created_at.date().strftime('%Y.%m.%d')  # 날짜 형식 변환
             if date not in grouped_frames:
                 grouped_frames[date] = []
 
             serialized_frame = CustomFrameSerializer(frame).data
             grouped_frames[date].append(serialized_frame)
-        
+
+        # 최신순 정렬
+        sorted_grouped_frames = sorted(grouped_frames.items(), key=lambda x: x[0], reverse=True)
+
         data = [
             {
                 "date": date,
-                "frames": frames
-            } for date, frames in grouped_frames.items()
+                "frames": frame_list
+            } for date, frame_list in sorted_grouped_frames
         ]
-                                        
+
         return Response({
             "code": "STG_2001",
             "status": 200,
             "message": "내가 저장한 프레임 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
+
 
 class BookmarkView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -400,129 +404,63 @@ class BookmarkView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-
 class CustomFrameCreateView(APIView):
-    # MultiPartParser를 통해 파일 업로드를 처리
-    parser_classes = [MultiPartParser]
+    parser_classes = [MultiPartParser, JSONParser]
 
     @swagger_auto_schema(
         operation_summary="커스텀 프레임 생성 API",
         operation_description="form-data로 커스텀 프레임을 생성합니다.",
-        manual_parameters=[
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='사용자 아이디'),
+                'frame_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='프레임 아이디'),
+                'custom_frame_title': openapi.Schema(type=openapi.TYPE_STRING, description='커스텀 프레임 제목'),
+                'custom_frame_img_url': openapi.Schema(type=openapi.TYPE_STRING, description='커스텀 프레임 이미지'),
+                'is_shared': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='공유 여부'),
+                'stickers': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'sticker_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='스티커 ID'),
+                            'position_x': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 X 좌표'),
+                            'position_y': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 Y 좌표'),
+                            'sticker_width': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 너비'),
+                            'sticker_height': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 높이'),
 
-            openapi.Parameter(
-                'user',
-                openapi.IN_FORM,
-                description='유저 아이디',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'frame',
-                openapi.IN_FORM,
-                description='프레임 아이디',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'custom_frame_title',
-                openapi.IN_FORM,
-                description='커스텀 프레임 제목',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'custom_frame_img',
-                openapi.IN_FORM,
-                description='커스텀 프레임 이미지 파일',
-                type=openapi.TYPE_FILE,
-                required=True
-            ),
-            openapi.Parameter(
-                'is_shared',
-                openapi.IN_FORM,
-                description='공유 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            ),
-            openapi.Parameter(
-                'is_bookmarked',
-                openapi.IN_FORM,
-                description='북마크 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            ),
-            openapi.Parameter(
-                'is_deleted',
-                openapi.IN_FORM,
-                description='삭제 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            )
-        ],
-        responses={
-            200: openapi.Response(
-                description="성공적으로 커스텀 프레임 생성",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="응답 코드"),
-                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="응답 메시지"),
-                        "data": openapi.Schema(
-                            type=openapi.TYPE_OBJECT,
-                            properties={
-                                "custom_frame_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="커스텀 프레임 ID"),
-                            },
-                        ),
-                    },
+                        }
+                    ),
+                    description='스티커 정보 배열'
                 ),
-            ),
-            500: openapi.Response(
-                description="서버 오류",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="에러 코드"),
-                        "status": openapi.Schema(type=openapi.TYPE_INTEGER, description="HTTP 상태 코드"),
-                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="에러 메시지"),
-                    },
-                ),
-            ),
-        },
+            },
+            required=['user_id', 'frame_id'],  # 필수 필드
+        ),
     )
     def post(self, request):
         try:
-            # POST 데이터 가져오기 (JSON 데이터가 아니라면 request.data 사용)
+            # 요청 데이터 검증
             custom_frame_title = request.data.get("custom_frame_title")
-            is_shared = request.data.get("is_shared")
-            is_shared = True if is_shared == "true" else False if is_shared == "false" else is_shared  # 변환 추가
 
-            custom_frame_img = request.FILES.get("custom_frame_img")
+            is_shared = request.data.get("is_shared")
+            if isinstance(is_shared, str):
+                is_shared = is_shared.lower() in ["true", "1"]
+            elif not isinstance(is_shared, bool):
+                return Response({"code": "CSF_4004", "message": "is_shared 값이 잘못되었습니다."}, status=400)
+
+            custom_frame_img = request.data.get("custom_frame_img_url")
             if not custom_frame_img:
                 return Response({"code": "CSF_4002", "message": "이미지가 전송되지 않았습니다."}, status=400)
 
-            # 이미지 파일 처리
-            image_data = custom_frame_img.read()
-            img = Image.open(BytesIO(image_data))
-            custom_frame_img_name = f"custom_frame_{int(time.time())}.jpg"
-            img_file = BytesIO()
-            img.save(img_file, format="JPEG")
-            img_file.seek(0)
-
-            custom_frame_img_url = upload_file_to_s3(
-                file=img_file,
-                key=f"custom-frames/{custom_frame_img_name}",
-                ExtraArgs={"ContentType": "image/jpeg", "ACL": "public-read"},
-            )
-
             # 유저와 프레임 조회
-            user_id = request.data.get("user")
+            user_id = request.data.get("user_id")
             user = User.objects.filter(user_id=user_id).first()
             if not user:
                 return Response({"code": "CSF_4041", "message": "해당 유저를 찾을 수 없습니다."}, status=404)
 
-            frame_id = request.data.get("frame")
+            frame_id = request.data.get("frame_id")
             frame = Frame.objects.filter(frame_id=frame_id).first()
+
             if not frame:
                 return Response({"code": "CSF_4042", "message": "해당 프레임을 찾을 수 없습니다."}, status=404)
 
@@ -531,19 +469,21 @@ class CustomFrameCreateView(APIView):
                 user=user,
                 frame=frame,
                 custom_frame_title=custom_frame_title,
-                custom_frame_url=custom_frame_img_url,
+                custom_frame_url=custom_frame_img,
                 is_shared=is_shared,
-                is_bookmarked=False,
-                is_deleted=False,
             )
 
             # 스티커 처리
             stickers = request.data.get("stickers", [])
+            if isinstance(stickers, str):
+                stickers = json.loads(stickers)
+
+            failed_stickers = []
             for sticker_data in stickers:
                 sticker_id = sticker_data.get("sticker_id")
                 sticker = Sticker.objects.filter(sticker_id=sticker_id).first()
                 if not sticker:
-                    logger.warning(f"스티커 ID {sticker_id}가 존재하지 않습니다.")
+                    failed_stickers.append(sticker_id)
                     continue
 
                 CustomFrameSticker.objects.create(
@@ -553,18 +493,22 @@ class CustomFrameCreateView(APIView):
                     position_y=sticker_data.get("position_y"),
                     sticker_width=sticker_data.get("sticker_width"),
                     sticker_height=sticker_data.get("sticker_height"),
+
                     is_deleted=False,
                 )
 
-            return Response(
-                {
-                    "code": "CSF_2001",
-                    "status": 201,
-                    "message": "커스텀 프레임 생성 성공",
-                    "data": {"custom_frame_id": custom_frame.custom_frame_id},
-                },
-                status=status.HTTP_201_CREATED,
-            )
+            # 응답 데이터
+            response_data = {
+                "code": "CSF_2001",
+                "status": 201,
+                "message": "커스텀 프레임 생성 성공",
+                "data": {"custom_frame_id": custom_frame.custom_frame_id},
+            }
+
+            if failed_stickers:
+                response_data["failed_stickers"] = failed_stickers
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"서버 오류: {str(e)}")
@@ -572,6 +516,7 @@ class CustomFrameCreateView(APIView):
                 {"code": "CSF_5001", "status": 500, "message": f"서버 오류: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
 
 class CustomFrameListView(APIView):
     @swagger_auto_schema(
@@ -675,7 +620,7 @@ class CustomFrameListView(APIView):
                     "customFrameTitle": customframe.custom_frame_title,
                     "customFrameUrl": customframe.custom_frame_url,
                     "bookmarks": customframe.bookmarks,
-                    "created_at": customframe.created_at.isoformat(),
+                    "created_at": customframe.created_at.date().strftime('%Y.%m.%d'),
                 }
                 for customframe in custom_frames if customframe.is_shared is True
             ]
@@ -701,19 +646,20 @@ class CustomFrameListView(APIView):
             )
 
 
-            
+
 class CustomFrameHotView(APIView):
     @swagger_auto_schema(
         operation_summary="핫한 커스텀 프레임 목록 조회",
-        operation_description="핫한 커스텀 프레임 3개를 조회합니다.",
+        operation_description="핫한 커스텀 프레임 4개를 조회합니다.",
         responses={
             200: openapi.Response(
                 description="핫한 커스텀 프레임 목록 조회",
                 examples={
                     "application/json": [
-                        {"custom_frame_id": "1", "custom_frame_title": "Frame 1", "custom_frame_url": "Frame 1", "bookmarks": 3},
-                        {"custom_frame_id": "2", "custom_frame_title": "Frame 2", "custom_frame_url": "Frame 2", "bookmarks": 2},
-                        {"custom_frame_id": "3", "custom_frame_title": "Frame 3", "custom_frame_url": "Frame 3", "bookmarks": 1},
+                        {"custom_frame_id": "1", "custom_frame_title": "Frame 1", "custom_frame_url": "Frame 1", "bookmarks": 4},
+                        {"custom_frame_id": "2", "custom_frame_title": "Frame 2", "custom_frame_url": "Frame 2", "bookmarks": 3},
+                        {"custom_frame_id": "3", "custom_frame_title": "Frame 3", "custom_frame_url": "Frame 3", "bookmarks": 2},
+                        {"custom_frame_id": "4", "custom_frame_title": "Frame 4", "custom_frame_url": "Frame 4", "bookmarks": 1},
                     ]
                 }
             )
@@ -725,11 +671,101 @@ class CustomFrameHotView(APIView):
     
 def get_hot_custom_frames():
     data = []
-    for i in range(1,4):
+    for i in range(1,5):
         custom_frame_data = redis_conn.hgetall(f"hot_custom_frame:{i}")        
         custom_frame_data = {key.decode("utf-8"): value.decode("utf-8") for key, value in custom_frame_data.items()}
         data.append(custom_frame_data)
     return data    
 
-     
-        
+
+class CustomFrameUploadAPIView(APIView):
+    parser_classes = [MultiPartParser]
+
+    @swagger_auto_schema(
+        operation_summary="커스텀 프레임 이미지 업로드 API",
+        operation_description="커스텀 프레임 이미지 Url 반환.",
+        manual_parameters=[
+            openapi.Parameter(
+                "file",
+                openapi.IN_FORM,
+                description="업로드할 파일",
+                type=openapi.TYPE_FILE,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="파일 업로드 성공",
+                examples={
+                    "application/json": {
+                        "code": "FILE_2001",
+                        "message": "파일 업로드 성공",
+                        "data": {
+                            "file_url": "string"
+                        }
+                    }
+                },
+            ),
+            400: openapi.Response(
+                description="파일 업로드 실패 (요청 오류)",
+                examples={
+                    "application/json": {
+                        "code": "FILE_4001",
+                        "message": "파일이 전송되지 않았습니다."
+                    }
+                },
+            ),
+            500: openapi.Response(
+                description="서버 오류 발생",
+                examples={
+                    "application/json": {
+                        "code": "FILE_5001",
+                        "message": "서버 오류 발생"
+                    }
+                },
+            ),
+        },
+    )
+    def post(self, request):
+        try:
+            uploaded_file = request.FILES.get("file")
+            if not uploaded_file:
+                return Response(
+                    {"code": "FILE_4001", "message": "파일이 전송되지 않았습니다."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            file_name = f"uploaded_file_{int(time.time())}_{uploaded_file.name}"
+
+            file_url = upload_file_to_s3(
+                file=uploaded_file,
+                key=f"uploads/{file_name}",
+                ExtraArgs={"ContentType": uploaded_file.content_type, "ACL": "public-read"},
+            )
+
+            if not file_url:
+                return Response(
+                    {
+                        "code": "FILE_5002",
+                        "message": "파일 업로드 실패",
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            return Response(
+                {
+                    "code": "FILE_2001",
+                    "message": "파일 업로드 성공",
+                    "data": {"file_url": file_url},
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            return Response(
+                {
+                    "code": "FILE_5001",
+                    "message": f"서버 오류 발생: {str(e)}",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

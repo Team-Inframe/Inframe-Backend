@@ -36,9 +36,9 @@ services:
 
   backend:
     container_name: backend
-    image: inframe2/hyeonho2:0.112.102
     volumes:
       - static_volume:/Inframe-Backend/static
+    image: inframe2/hyeonho2:1.1.20250127152720
     env_file:
       - .env
     ports:
@@ -61,9 +61,7 @@ services:
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     environment:
      - REDIS_HOST=${EC2_HOST}
-     - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
-    networks:
-      - inf
+     - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//    
      
   celery:
     build:
@@ -74,9 +72,6 @@ services:
     environment:
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
-    networks:
-      - inf
-
 
   celery-beat:
     build:
@@ -87,9 +82,6 @@ services:
     environment:
       - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
       - REDIS_HOST=${EC2_HOST}
-    networks:
-      - inf
-
 
 volumes:
   static_volume:
