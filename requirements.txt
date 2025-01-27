@@ -22,6 +22,8 @@ django-celery-results==2.5.1
 django-cors-headers==4.6.0
 django-environ==0.11.2
 django-extensions==3.2.3
+django-prometheus==2.3.1
+django-redis==5.0.0
 django-storages==1.14.4
 django-timezone-field==7.1
 djangorestframework==3.15.2
@@ -39,6 +41,7 @@ mysqlclient==2.2.7
 openai==1.59.7
 packaging==24.2
 pillow==11.1.0
+prometheus_client==0.21.1
 prompt_toolkit==3.0.50
 pydantic==2.10.5
 pydantic_core==2.27.2
@@ -46,6 +49,7 @@ python-crontab==3.2.0
 python-dateutil==2.9.0.post0
 pytz==2024.2
 PyYAML==6.0.2
+redis==5.0.0
 requests==2.32.3
 s3transfer==0.10.4
 six==1.17.0
@@ -59,6 +63,3 @@ uritemplate==4.1.1
 urllib3==2.3.0
 vine==5.1.0
 wcwidth==0.2.13
-django-cors-headers==4.6.0
-redis==5.0.0
-django-redis==5.0.0
