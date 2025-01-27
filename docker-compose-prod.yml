@@ -22,12 +22,12 @@ services:
       - "--metrics.prometheus=true"
       - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000"
       - "--api.dashboard=true"
-      - "--accesslog=true"
-      - "--accesslog.bufferingsize=100"
-      - "--accesslog.format=json"
-      - "--accesslog.fields.defaultmode=keep"
-      - "--accesslog.fields.headers.defaultmode=keep"
-      - "--accesslog.fields.headers.names.X-Forwarded-For=keep"
+#      - "--accesslog=true"
+#      - "--accesslog.bufferingsize=100"
+#      - "--accesslog.format=json"
+#      - "--accesslog.fields.defaultmode=keep"
+#      - "--accesslog.fields.headers.defaultmode=keep"
+#      - "--accesslog.fields.headers.names.X-Forwarded-For=keep"
     ports:
       - "80:80"
       - "443:443"
@@ -37,9 +37,6 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - inf
-    labels:
-      logging: "promtail"
-      logging_jobname: "traefiklog"
 
   backend:
     container_name: backend
@@ -50,14 +47,12 @@ services:
       - .env
     ports:
       - "8000:8000"
-
     restart: always
     command: >
       sh -c "python manage.py collectstatic --noinput &&
             python manage.py makemigrations --noinput &&
             python manage.py migrate --noinput &&
             gunicorn --workers=2 --bind 0.0.0.0:8000 config.wsgi:application"
-
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
@@ -67,8 +62,8 @@ services:
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     environment:
-     - REDIS_HOST=${EC2_HOST}
-     - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//    
+      - REDIS_HOST=${EC2_HOST}
+      - CELERY_BROKER_URL=amqp://inframe:inframe@${EC2_HOST}:5672//
      
   celery:
     build:
