@@ -695,15 +695,16 @@ class CustomFrameListView(APIView):
 class CustomFrameHotView(APIView):
     @swagger_auto_schema(
         operation_summary="핫한 커스텀 프레임 목록 조회",
-        operation_description="핫한 커스텀 프레임 3개를 조회합니다.",
+        operation_description="핫한 커스텀 프레임 4개를 조회합니다.",
         responses={
             200: openapi.Response(
                 description="핫한 커스텀 프레임 목록 조회",
                 examples={
                     "application/json": [
-                        {"custom_frame_id": "1", "custom_frame_title": "Frame 1", "custom_frame_url": "Frame 1", "bookmarks": 3},
-                        {"custom_frame_id": "2", "custom_frame_title": "Frame 2", "custom_frame_url": "Frame 2", "bookmarks": 2},
-                        {"custom_frame_id": "3", "custom_frame_title": "Frame 3", "custom_frame_url": "Frame 3", "bookmarks": 1},
+                        {"custom_frame_id": "1", "custom_frame_title": "Frame 1", "custom_frame_url": "Frame 1", "bookmarks": 4},
+                        {"custom_frame_id": "2", "custom_frame_title": "Frame 2", "custom_frame_url": "Frame 2", "bookmarks": 3},
+                        {"custom_frame_id": "3", "custom_frame_title": "Frame 3", "custom_frame_url": "Frame 3", "bookmarks": 2},
+                        {"custom_frame_id": "4", "custom_frame_title": "Frame 4", "custom_frame_url": "Frame 4", "bookmarks": 1},
                     ]
                 }
             )
@@ -715,7 +716,7 @@ class CustomFrameHotView(APIView):
     
 def get_hot_custom_frames():
     data = []
-    for i in range(1,4):
+    for i in range(1,5):
         custom_frame_data = redis_conn.hgetall(f"hot_custom_frame:{i}")        
         custom_frame_data = {key.decode("utf-8"): value.decode("utf-8") for key, value in custom_frame_data.items()}
         data.append(custom_frame_data)
