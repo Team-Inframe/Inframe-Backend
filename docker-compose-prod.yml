@@ -5,6 +5,7 @@ services:
     env_file:
       - .env
     command:
+      - "--log.level=DEBUG"
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -34,7 +35,7 @@ services:
       - "8080:8080"
       - "8091:8091"
     volumes:
-      - "traefik-certificates:/letsencrypt"
+      - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - inf
@@ -86,7 +87,6 @@ services:
 
 volumes:
   static_volume:
-  traefik-certificates:
 
 networks:
   inf:
