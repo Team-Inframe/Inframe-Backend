@@ -449,20 +449,7 @@ class CustomFrameCreateView(APIView):
                 type=openapi.TYPE_BOOLEAN,
                 required=True
             ),
-            openapi.Parameter(
-                'is_bookmarked',
-                openapi.IN_FORM,
-                description='북마크 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            ),
-            openapi.Parameter(
-                'is_deleted',
-                openapi.IN_FORM,
-                description='삭제 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            )
+
         ],
         responses={
             200: openapi.Response(
@@ -537,8 +524,7 @@ class CustomFrameCreateView(APIView):
                 custom_frame_title=custom_frame_title,
                 custom_frame_url=custom_frame_img_url,
                 is_shared=is_shared,
-                is_bookmarked=False,
-                is_deleted=False,
+
             )
 
             # 스티커 처리
