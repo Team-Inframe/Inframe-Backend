@@ -12,7 +12,7 @@ from PIL import Image
 import time
 import logging
 import json
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import redis
 from django_redis import get_redis_connection
 from django.shortcuts import get_object_or_404
@@ -404,116 +404,63 @@ class BookmarkView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-
 class CustomFrameCreateView(APIView):
-    # MultiPartParser를 통해 파일 업로드를 처리
-    parser_classes = [MultiPartParser]
+    parser_classes = [MultiPartParser, JSONParser]
 
     @swagger_auto_schema(
         operation_summary="커스텀 프레임 생성 API",
         operation_description="form-data로 커스텀 프레임을 생성합니다.",
-        manual_parameters=[
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='사용자 아이디'),
+                'frame_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='프레임 아이디'),
+                'custom_frame_title': openapi.Schema(type=openapi.TYPE_STRING, description='커스텀 프레임 제목'),
+                'custom_frame_img_url': openapi.Schema(type=openapi.TYPE_STRING, description='커스텀 프레임 이미지'),
+                'is_shared': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='공유 여부'),
+                'stickers': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'sticker_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='스티커 ID'),
+                            'position_x': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 X 좌표'),
+                            'position_y': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 Y 좌표'),
+                            'sticker_width': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 너비'),
+                            'sticker_height': openapi.Schema(type=openapi.TYPE_NUMBER, description='스티커 높이'),
 
-            openapi.Parameter(
-                'user',
-                openapi.IN_FORM,
-                description='유저 아이디',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'frame',
-                openapi.IN_FORM,
-                description='프레임 아이디',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'custom_frame_title',
-                openapi.IN_FORM,
-                description='커스텀 프레임 제목',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'custom_frame_img',
-                openapi.IN_FORM,
-                description='커스텀 프레임 이미지 파일',
-                type=openapi.TYPE_FILE,
-                required=True
-            ),
-            openapi.Parameter(
-                'is_shared',
-                openapi.IN_FORM,
-                description='공유 여부',
-                type=openapi.TYPE_BOOLEAN,
-                required=True
-            ),
-
-        ],
-        responses={
-            200: openapi.Response(
-                description="성공적으로 커스텀 프레임 생성",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="응답 코드"),
-                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="응답 메시지"),
-                        "data": openapi.Schema(
-                            type=openapi.TYPE_OBJECT,
-                            properties={
-                                "custom_frame_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="커스텀 프레임 ID"),
-                            },
-                        ),
-                    },
+                        }
+                    ),
+                    description='스티커 정보 배열'
                 ),
-            ),
-            500: openapi.Response(
-                description="서버 오류",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "code": openapi.Schema(type=openapi.TYPE_STRING, description="에러 코드"),
-                        "status": openapi.Schema(type=openapi.TYPE_INTEGER, description="HTTP 상태 코드"),
-                        "message": openapi.Schema(type=openapi.TYPE_STRING, description="에러 메시지"),
-                    },
-                ),
-            ),
-        },
+            },
+            required=['user_id', 'frame_id'],  # 필수 필드
+        ),
     )
     def post(self, request):
         try:
-            # POST 데이터 가져오기 (JSON 데이터가 아니라면 request.data 사용)
+            # 요청 데이터 검증
             custom_frame_title = request.data.get("custom_frame_title")
-            is_shared = request.data.get("is_shared")
-            is_shared = True if is_shared == "true" else False if is_shared == "false" else is_shared  # 변환 추가
 
-            custom_frame_img = request.FILES.get("custom_frame_img")
+            is_shared = request.data.get("is_shared")
+            if isinstance(is_shared, str):
+                is_shared = is_shared.lower() in ["true", "1"]
+            elif not isinstance(is_shared, bool):
+                return Response({"code": "CSF_4004", "message": "is_shared 값이 잘못되었습니다."}, status=400)
+
+            custom_frame_img = request.data.get("custom_frame_img_url")
             if not custom_frame_img:
                 return Response({"code": "CSF_4002", "message": "이미지가 전송되지 않았습니다."}, status=400)
 
-            # 이미지 파일 처리
-            image_data = custom_frame_img.read()
-            img = Image.open(BytesIO(image_data))
-            custom_frame_img_name = f"custom_frame_{int(time.time())}.jpg"
-            img_file = BytesIO()
-            img.save(img_file, format="JPEG")
-            img_file.seek(0)
-
-            custom_frame_img_url = upload_file_to_s3(
-                file=img_file,
-                key=f"custom-frames/{custom_frame_img_name}",
-                ExtraArgs={"ContentType": "image/jpeg", "ACL": "public-read"},
-            )
-
             # 유저와 프레임 조회
-            user_id = request.data.get("user")
+            user_id = request.data.get("user_id")
             user = User.objects.filter(user_id=user_id).first()
             if not user:
                 return Response({"code": "CSF_4041", "message": "해당 유저를 찾을 수 없습니다."}, status=404)
 
-            frame_id = request.data.get("frame")
+            frame_id = request.data.get("frame_id")
             frame = Frame.objects.filter(frame_id=frame_id).first()
+
             if not frame:
                 return Response({"code": "CSF_4042", "message": "해당 프레임을 찾을 수 없습니다."}, status=404)
 
@@ -522,18 +469,21 @@ class CustomFrameCreateView(APIView):
                 user=user,
                 frame=frame,
                 custom_frame_title=custom_frame_title,
-                custom_frame_url=custom_frame_img_url,
+                custom_frame_url=custom_frame_img,
                 is_shared=is_shared,
-
             )
 
             # 스티커 처리
             stickers = request.data.get("stickers", [])
+            if isinstance(stickers, str):
+                stickers = json.loads(stickers)
+
+            failed_stickers = []
             for sticker_data in stickers:
                 sticker_id = sticker_data.get("sticker_id")
                 sticker = Sticker.objects.filter(sticker_id=sticker_id).first()
                 if not sticker:
-                    logger.warning(f"스티커 ID {sticker_id}가 존재하지 않습니다.")
+                    failed_stickers.append(sticker_id)
                     continue
 
                 CustomFrameSticker.objects.create(
@@ -543,18 +493,22 @@ class CustomFrameCreateView(APIView):
                     position_y=sticker_data.get("position_y"),
                     sticker_width=sticker_data.get("sticker_width"),
                     sticker_height=sticker_data.get("sticker_height"),
+
                     is_deleted=False,
                 )
 
-            return Response(
-                {
-                    "code": "CSF_2001",
-                    "status": 201,
-                    "message": "커스텀 프레임 생성 성공",
-                    "data": {"custom_frame_id": custom_frame.custom_frame_id},
-                },
-                status=status.HTTP_201_CREATED,
-            )
+            # 응답 데이터
+            response_data = {
+                "code": "CSF_2001",
+                "status": 201,
+                "message": "커스텀 프레임 생성 성공",
+                "data": {"custom_frame_id": custom_frame.custom_frame_id},
+            }
+
+            if failed_stickers:
+                response_data["failed_stickers"] = failed_stickers
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"서버 오류: {str(e)}")
@@ -562,6 +516,7 @@ class CustomFrameCreateView(APIView):
                 {"code": "CSF_5001", "status": 500, "message": f"서버 오류: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
 
 class CustomFrameListView(APIView):
     @swagger_auto_schema(
