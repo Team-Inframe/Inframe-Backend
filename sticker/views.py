@@ -1,10 +1,13 @@
 import os
+from collections import defaultdict
+
 import environ
 from datetime import datetime
 from io import BytesIO
 
 import requests
 from deep_translator import GoogleTranslator
+from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from openai import OpenAI
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -230,16 +233,37 @@ class StickerListView(APIView):
         user_id = request.query_params.get("user_id")
         user = get_object_or_404(User, user_id=user_id)
 
+        # 스티커 데이터 조회
         stickers = (
             Sticker.objects.filter(user=user, is_deleted=False)
-            .only("sticker_id", "sticker_url")
-            .values("sticker_id", "sticker_url")
+            .annotate(date=TruncDate('created_at'))  # 날짜 필드 추가
+            .values("sticker_id", "sticker_url", "date")  # 필요한 필드만 가져오기
         )
+
+        # 날짜별로 그룹화
+        grouped_frames = defaultdict(list)
+        for sticker in stickers:
+            date = sticker["date"].strftime('%Y.%m.%d')  # 날짜 형식 변환
+            grouped_frames[date].append({
+                "sticker_id": sticker["sticker_id"],
+                "sticker_url": sticker["sticker_url"]
+            })
+
+        # 최신순 정렬
+        sorted_grouped_frames = sorted(grouped_frames.items(), key=lambda x: x[0], reverse=True)
+
+        # 최종 데이터 구조화
+        data = [
+            {
+                "date": date,
+                "stickers": stickers
+            } for date, stickers in sorted_grouped_frames
+        ]
 
         return Response({
             "code": "STK_2001",
             "status": 200,
             "message": "스티커 목록 조회 성공",
-            "data": stickers
+            "data": data
         }, status=status.HTTP_200_OK)
 
