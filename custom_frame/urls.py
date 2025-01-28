@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import CustomFrameDetailView, CustomMyFrameDetailView, MySavedFramesView, BookmarkView, \
-  CustomFrameCreateView, CustomFrameListView, CustomFrameHotView, CustomFrameUploadAPIView
+  CustomFrameCreateView, CustomFrameListView, CustomFrameHotView, CustomFrameUploadAPIView, WeatherFrameView
 
 urlpatterns = [
   path("<int:custom_frame_id>", CustomFrameDetailView.as_view(), name = "custom_frames"),
@@ -15,4 +15,5 @@ urlpatterns = [
   path("list", CustomFrameListView.as_view(), name="custom_frame_list"),  # 목록 조회 API 
   path("images", CustomFrameUploadAPIView.as_view(), name="custom_frame_upload"),
   path("hot", CustomFrameHotView.as_view(), name="custom-frame-hot"),
+  path("weatherframe", WeatherFrameView.as_view(), name="weather-frame-view"),
 ]

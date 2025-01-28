@@ -22,6 +22,30 @@ from django.db.models.functions import TruncDate
 logger = logging.getLogger("inframe")
 redis_conn = get_redis_connection("default")
 
+import os
+import environ
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+env = environ.Env()
+
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+rain_frame = env('rain_frame')
+snow_frame = env('snow_frame')
+sun_frame = env('sun_frame')
+
+snow_sticker_1 = env('snow_sticker_1')
+snow_sticker_2 = env('snow_sticker_2')
+snow_sticker_3 = env('snow_sticker_3')
+
+rain_sticker_1 = env('rain_sticker_1')
+rain_sticker_2 = env('rain_sticker_2')
+rain_sticker_3 = env('rain_sticker_3')
+
+sun_sticker_1 = env('sun_sticker_1')
+sun_sticker_2 = env('sun_sticker_2')
+
 class CustomFrameDetailView(APIView):
     @swagger_auto_schema(
         operation_summary="커스텀 프레임 조회 API",
@@ -769,3 +793,139 @@ class CustomFrameUploadAPIView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+            
+
+class WeatherFrameView(APIView):
+    @swagger_auto_schema(
+        operation_summary="날씨 프레임 조회",
+        operation_description="날씨 조건에 맞는 프레임과 스티커를 조회하는 API",
+        manual_parameters=[
+            openapi.Parameter('weather_condition', openapi.IN_QUERY, description="날씨 조건 (예: Clear, Rain, Snow 등)", type=openapi.TYPE_STRING),
+        ],
+        responses={
+            200: openapi.Response(
+                description="날씨 프레임 목록 조회 성공",
+                examples={
+                    "application/json": {
+                        "code": "WEA_2001",
+                        "status": 200,
+                        "message": "날씨 프레임 목록 조회 성공",
+                        "data": {
+                            "customFrameImg": "비 프레임 이미지 URL",
+                            "stickers": [
+                                {
+                                    "sticker_img_url": "sticker_1_img_url",
+                                    "sticker_x": 100,
+                                    "sticker_y": 100,
+                                    "sticker_width": 100,
+                                    "sticker_height": 100
+                                }
+                            ]
+                        }
+                    }
+                }
+            )
+        }
+    )
+    def get(self, request):
+        weather_condition = request.GET.get('weather_condition')
+        
+        custom_frame_data = self.get_custom_frame_data(weather_condition)        
+        
+        return Response(
+                {
+                    "code": "WEA_2001",
+                    "status": 200,
+                    "message": "날씨 프레임 목록 조회 성공",
+                    "data": custom_frame_data,
+                },
+                status=status.HTTP_200_OK,
+            )
+    
+    def get_custom_frame_data(self, weather_condition):
+        if weather_condition in ['Thunderstorm', 'Rain', 'Drizzle']:
+            custom_frame_img = rain_frame
+            stickers = self.get_stickers_for_rain()
+            
+        elif weather_condition == 'Snow':
+            custom_frame_img = snow_frame
+            stickers = self.get_stickers_for_snow()
+
+        elif weather_condition == 'Clear':
+            custom_frame_img = sun_frame
+            stickers = self.get_stickers_for_clear()
+
+        if custom_frame_img:
+            return {
+                "customFrameImg": custom_frame_img,
+                "stickers": stickers
+            }
+        return None     
+              
+    def get_stickers_for_rain(self):
+        return [
+            {
+                "sticker_img_url": rain_sticker_1,
+                "sticker_x": 100,
+                "sticker_y": 100,
+                "sticker_width": 100,
+                "sticker_height": 100
+            },
+            {
+                "sticker_img_url": rain_sticker_2,
+                "sticker_x": 200,
+                "sticker_y": 200,
+                "sticker_width": 200,
+                "sticker_height": 200
+            },  
+            {
+                "sticker_img_url": rain_sticker_3,
+                "sticker_x": 300,
+                "sticker_y": 300,
+                "sticker_width": 300,
+                "sticker_height": 300
+            },       
+        ]
+
+    def get_stickers_for_snow(self):
+        return [
+            {
+                "sticker_img_url": snow_sticker_1,
+                "sticker_x": 100,
+                "sticker_y": 100,
+                "sticker_width": 100,
+                "sticker_height": 100
+            },
+            {
+                "sticker_img_url": snow_sticker_2,
+                "sticker_x": 200,
+                "sticker_y": 200,
+                "sticker_width": 200,
+                "sticker_height": 200
+            },  
+            {
+                "sticker_img_url": snow_sticker_3,
+                "sticker_x": 300,
+                "sticker_y": 300,
+                "sticker_width": 300,
+                "sticker_height": 300
+            },             
+        ]
+
+    def get_stickers_for_clear(self):
+        return [
+            {
+                "sticker_img_url": sun_sticker_1,
+                "sticker_x": 100,
+                "sticker_y": 100,
+                "sticker_width": 100,
+                "sticker_height": 100
+            },
+            {
+                "sticker_img_url": sun_sticker_2,
+                "sticker_x": 200,
+                "sticker_y": 200,
+                "sticker_width": 200,
+                "sticker_height": 200
+            },
+        ]
