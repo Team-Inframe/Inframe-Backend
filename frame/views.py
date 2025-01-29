@@ -25,11 +25,11 @@ from .serializers import CreateFrameImgSerializer
 
 logger = logging.getLogger("inframe")
 
-class CreateFrameView(APIView):
 
+class CreateFrameView(APIView):
     # MultiPartParser를 통해 파일 업로드를 처리
     parser_classes = [MultiPartParser]
-    
+
     @swagger_auto_schema(
         operation_summary="프레임 생성 API",
         operation_description="form-data로 이미지 파일과 카메라 크기를 업로드하여 프레임을 생성합니다.",
@@ -44,8 +44,8 @@ class CreateFrameView(APIView):
             openapi.Parameter(
                 'frame_bg',
                 openapi.IN_FORM,
-                description='배경 프레임의 배경 이미지',
-                type=openapi.TYPE_STRING,
+                description='배경 프레임의 배경 이미지 (파일)',
+                type=openapi.TYPE_FILE,
                 required=True
             ),
             openapi.Parameter(
@@ -69,6 +69,7 @@ class CreateFrameView(APIView):
                             properties={
                                 "frame_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="프레임 ID"),
                                 "frame_url": openapi.Schema(type=openapi.TYPE_STRING, description="프레임 이미지 URL"),
+                                "frame_bg_url": openapi.Schema(type=openapi.TYPE_STRING, description="배경 이미지 URL"),
                             },
                         ),
                     },
@@ -92,34 +93,77 @@ class CreateFrameView(APIView):
         logger.info(f"Request Files: {request.FILES}")
 
         frame_bg = request.data.get("frame_bg")
-        frame_url = request.data.get("frame_url")
+        frame_url_file = request.FILES.get("frame_url")
         basic_frame_id = request.data.get("basic_frame_id")
 
-        if not frame_bg:
+        if not frame_bg or not frame_url_file:
             return Response(
                 {
                     "code": "FRA_4002",
                     "status": 400,
-                    "message": "배경 이미지 누락",
+                    "message": "프레임 또는 배경 이미지 누락",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            image_data = frame_url.read()
-            img = Image.open(BytesIO(image_data))
+            if frame_bg.startswith("http" or "BG"):
+                frame_bg = frame_bg
+            else:
+                frame_bg_file = request.FILES.get("frame_bg")
+                if frame_bg_file:
+                    bg_image_data = frame_bg_file.read()
+                    bg_img = Image.open(BytesIO(bg_image_data))
 
-            if img.mode == 'RGBA':
-                img = img.convert('RGB')
+                    if bg_img.mode == 'RGBA':
+                        bg_img = bg_img.convert('RGB')
 
-            frame_url_name = f"frame_{int(time.time())}.jpg"
-            img_file = BytesIO()
-            img.save(img_file, format="JPEG")
-            img_file.seek(0)
+                    bg_filename = f"bg_{int(time.time())}.jpg"
+                    bg_img_file = BytesIO()
+                    bg_img.save(bg_img_file, format="JPEG")
+                    bg_img_file.seek(0)
+
+                    frame_bg = upload_file_to_s3(
+                        file=bg_img_file,
+                        key=f"background-frames/{bg_filename}",
+                        ExtraArgs={
+                            "ContentType": "image/jpeg",
+                            "ACL": "public-read",
+                        },
+                    )
+                    if not frame_bg:
+                        return Response(
+                            {
+                                "code": "FRA_5001",
+                                "status": 500,
+                                "message": "배경 이미지 업로드 실패",
+                            },
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        )
+                else:
+                    return Response(
+                        {
+                            "code": "FRA_4003",
+                            "status": 400,
+                            "message": "frame_bg가 파일도 URL도 아님",
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            frame_image_data = frame_url_file.read()
+            frame_img = Image.open(BytesIO(frame_image_data))
+
+            if frame_img.mode == 'RGBA':
+                frame_img = frame_img.convert('RGB')
+
+            frame_filename = f"frame_{int(time.time())}.jpg"
+            frame_img_file = BytesIO()
+            frame_img.save(frame_img_file, format="JPEG")
+            frame_img_file.seek(0)
 
             frame_url = upload_file_to_s3(
-                file=img_file,
-                key=f"basic-frames/{frame_url_name}",
+                file=frame_img_file,
+                key=f"basic-frames/{frame_filename}",
                 ExtraArgs={
                     "ContentType": "image/jpeg",
                     "ACL": "public-read",
@@ -130,12 +174,11 @@ class CreateFrameView(APIView):
                     {
                         "code": "FRA_5001",
                         "status": 500,
-                        "message": "이미지 업로드 실패",
+                        "message": "프레임 이미지 업로드 실패",
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
-            # 프레임 데이터 DB 저장
             frame = Frame.objects.create(
                 frame_url=frame_url,
                 frame_bg=frame_bg,
@@ -149,6 +192,7 @@ class CreateFrameView(APIView):
                 "data": {
                     "frame_id": frame.frame_id,
                     "frame_url": frame_url,
+                    "frame_bg": frame_bg,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
