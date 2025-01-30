@@ -67,7 +67,10 @@ class StickerView(APIView):
                         "code": "STK_2001",
                         "status": 201,
                         "message": "스티커 생성 완료",
-                        "stickerUrl": "https://example.com/stickers/generated_sticker.png",
+                        "data": {
+                            "sticker_id": 0,
+                            "sticker_url": "https://example.com/stickers/generated_sticker.png",
+                        }
                     }
                 },
             ),
@@ -111,7 +114,7 @@ class StickerView(APIView):
             translator = GoogleTranslator(source='ko', target='en')
             english_prompt = translator.translate(prompt)
 
-            detailed_prompt = f"a charming and vibrant {english_prompt} character design with beautiful, captivating eyes that outshine Aurora’s and evoke love at first sight. {english_prompt} should feel alive, with a vivid, lifelike two-dimensional effect and a cute, lovely appearance. The full body, including arms and legs, must be visible, and the {english_prompt} should always look straight ahead, exuding charm. The style should be animated with no text, featuring only one {english_prompt} in the frame"
+            detailed_prompt = f"happy {english_prompt}, minimalist sticker in cartoon style, emote cute, happy {english_prompt}"
             response = client.images.generate(
                 prompt=detailed_prompt,
                 n=1,
@@ -144,12 +147,18 @@ class StickerView(APIView):
             user_id=user.user_id,
             sticker_url=sticker_url
         )
-
+        
+        data = {
+            "sticker_id": sticker.sticker_id,
+            "sticker_url": sticker.sticker_url,
+        }
+        
+        
         return Response({
             "code": "STK_2001",
             "status": 201,
             "message": "스티커 생성 완료",
-            "sticker_url": sticker.sticker_url,
+            "data": data,
         }, status=status.HTTP_201_CREATED)
 
     def download_image(self, url):
