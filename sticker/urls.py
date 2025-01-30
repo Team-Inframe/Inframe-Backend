@@ -5,5 +5,5 @@ from sticker.views import StickerView, StickerListView
 
 urlpatterns = [
     path('', StickerView.as_view(), name='sticker'),
-    path('list', StickerListView.as_view(), name='sticker-list'),
+    path('/list', StickerListView.as_view(), name='sticker-list'),
 ]
