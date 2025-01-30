@@ -67,10 +67,7 @@ class StickerView(APIView):
                         "code": "STK_2001",
                         "status": 201,
                         "message": "스티커 생성 완료",
-                        "data": {
-                            "sticker_id": 0,
-                            "sticker_url": "https://example.com/stickers/generated_sticker.png",
-                        }
+                        "stickerUrl": "https://example.com/stickers/generated_sticker.png",
                     }
                 },
             ),
@@ -147,18 +144,12 @@ class StickerView(APIView):
             user_id=user.user_id,
             sticker_url=sticker_url
         )
-        
-        data = {
-            "sticker_id": sticker.sticker_id,
-            "sticker_url": sticker.sticker_url,
-        }
-        
-        
+
         return Response({
             "code": "STK_2001",
             "status": 201,
             "message": "스티커 생성 완료",
-            "data": data,
+            "sticker_url": sticker.sticker_url,
         }, status=status.HTTP_201_CREATED)
 
     def download_image(self, url):
