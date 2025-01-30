@@ -7,6 +7,7 @@ from io import BytesIO
 
 import requests
 from deep_translator import GoogleTranslator
+from django.conf import settings
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from openai import OpenAI
@@ -175,7 +176,12 @@ class StickerView(APIView):
     def upload_to_s3(self, image, file_name):
         from django.core.files.storage import default_storage
         file_path = default_storage.save(file_name, image)
-        return default_storage.url(file_path)
+
+        s3_bucket = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
+        region = settings.STORAGES["default"]["OPTIONS"]["region_name"]
+        url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{file_path}"
+
+        return url
 
     def download_image(self, url):
         response = requests.get(url)

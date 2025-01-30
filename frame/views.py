@@ -2,6 +2,8 @@ import time
 from datetime import datetime
 from io import BytesIO
 import random
+
+import boto3
 from deep_translator import GoogleTranslator
 from openai import OpenAI
 client = OpenAI()
@@ -291,15 +293,32 @@ class CreateAiFrameView(APIView):
         return BytesIO(response.content)
 
     def upload_to_s3(self, image, file_name):
-        from django.core.files.storage import default_storage
-        file_path = default_storage.save(file_name, image)
-        return default_storage.url(file_path)
+        """
+        S3에 파일을 업로드하고 절대 URL을 반환하는 함수.
+        """
+        s3_client = boto3.client(
+            "s3",
+            region_name=settings.STORAGES["default"]["OPTIONS"]["region_name"],
+            aws_access_key_id=settings.STORAGES["default"]["OPTIONS"]["access_key"],
+            aws_secret_access_key=settings.STORAGES["default"]["OPTIONS"]["secret_key"],
+        )
+
+        s3_bucket = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
+
+        try:
+            s3_client.upload_fileobj(image, s3_bucket, file_name)
+
+            # S3 절대 URL 생성
+            region = settings.STORAGES["default"]["OPTIONS"]["region_name"]
+            url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{file_name}"
+            return url
+
+        except Exception as e:
+            raise Exception(f"S3 업로드 오류: {str(e)}")
 
     def example_view(self, prompt):
         # 랜덤 숫자 생성 (1, 2, 3 중 하나)
         i = random.randint(1, 3)
-
-        # 영어 프롬프트가 "dog"이면 메시지 생성
 
         # 랜덤 값에 따른 메시지 생성
         if i == 1:
@@ -312,7 +331,6 @@ class CreateAiFrameView(APIView):
             message = "white."
 
         return message
-
 
 class FrameDetailView(APIView):
     @swagger_auto_schema(

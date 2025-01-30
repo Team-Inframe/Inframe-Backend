@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import boto3
+from django.conf import settings
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
@@ -9,6 +11,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 import logging
+
+
 logger = logging.getLogger("inframe")
 
 from photo.models import Photo
@@ -118,12 +122,24 @@ class CreatePhotoView(APIView):
         }, status=status.HTTP_201_CREATED)
 
     def upload_to_s3(self, image, file_name):
-        from django.core.files.storage import default_storage
-        from django.core.files.base import ContentFile
+        s3_client = boto3.client(
+            "s3",
+            region_name=settings.STORAGES["default"]["OPTIONS"]["region_name"],
+            aws_access_key_id=settings.STORAGES["default"]["OPTIONS"]["access_key"],
+            aws_secret_access_key=settings.STORAGES["default"]["OPTIONS"]["secret_key"],
+        )
 
-        file_path = default_storage.save(file_name, ContentFile(image.read()))
-        return default_storage.url(file_path)
+        s3_bucket = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
 
+        try:
+            s3_client.upload_fileobj(image, s3_bucket, file_name)
+
+            region = settings.STORAGES["default"]["OPTIONS"]["region_name"]
+            url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{file_name}"
+            return url
+
+        except Exception as e:
+            raise Exception(f"S3 업로드 오류: {str(e)}")
 class PhotoListView(APIView):
     @swagger_auto_schema(
         operation_summary="갤러리 목록 조회 API",

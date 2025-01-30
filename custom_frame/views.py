@@ -488,6 +488,12 @@ class CustomFrameCreateView(APIView):
             if not frame:
                 return Response({"code": "CSF_4042", "message": "해당 프레임을 찾을 수 없습니다."}, status=404)
 
+            image_key = f"custom_frames/{user_id}/{custom_frame_title}_{frame_id}.png"
+            image_url = upload_file_to_s3(custom_frame_img, image_key)
+
+            if not image_url:
+                return Response({"code": "CSF_5001", "message": "이미지 업로드에 실패했습니다."}, status=500)
+
             # CustomFrame 생성
             custom_frame = CustomFrame.objects.create(
                 user=user,

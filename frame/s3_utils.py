@@ -28,7 +28,8 @@ def upload_file_to_s3(file, key, ExtraArgs=None):
             s3.upload_fileobj(file, s3_bucket, key, ExtraArgs)
 
             # S3 파일 URL 생성
-            url = f"https://{s3_bucket}.s3.{settings.STORAGES["default"]["OPTIONS"]["region_name"]}.amazonaws.com/{key}"
+            region = settings.STORAGES["default"]["OPTIONS"]["region_name"]
+            url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{key}"
             return url
 
         except Exception as e:
