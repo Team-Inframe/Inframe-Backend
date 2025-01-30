@@ -1,7 +1,5 @@
 from datetime import datetime
 
-import boto3
-from django.conf import settings
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
@@ -11,8 +9,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 import logging
-
-
 logger = logging.getLogger("inframe")
 
 from photo.models import Photo
@@ -109,7 +105,7 @@ class CreatePhotoView(APIView):
         photo = Photo.objects.create(
             user_id=user.user_id,
             photo_url=s3_url,
-            location = location
+            location=location
         )
 
         return Response({
@@ -119,32 +115,15 @@ class CreatePhotoView(APIView):
             "photo_id": photo.photo_id,
             "photo_url": photo.photo_url,
             "location": photo.location
+
         }, status=status.HTTP_201_CREATED)
 
     def upload_to_s3(self, image, file_name):
-        s3_client = boto3.client(
-            "s3",
-            region_name=settings.STORAGES["default"]["OPTIONS"]["region_name"],
-            aws_access_key_id=settings.STORAGES["default"]["OPTIONS"]["access_key"],
-            aws_secret_access_key=settings.STORAGES["default"]["OPTIONS"]["secret_key"],
-        )
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
 
-        s3_bucket = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
-
-        if not isinstance(image, BytesIO):
-            image = BytesIO(image.read())  # 파일 객체를 BytesIO로 변환
-
-        try:
-            # S3에 파일 업로드
-            s3_client.upload_fileobj(image, s3_bucket, file_name)
-
-            # S3 절대 URL 생성
-            region = settings.STORAGES["default"]["OPTIONS"]["region_name"]
-            url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{file_name}"
-            return url
-
-        except Exception as e:
-            raise Exception(f"S3 업로드 오류: {str(e)}")
+        file_path = default_storage.save(file_name, ContentFile(image.read()))
+        return default_storage.url(file_path)
 
 class PhotoListView(APIView):
     @swagger_auto_schema(
@@ -213,12 +192,12 @@ class PhotoListView(APIView):
         ).order_by('-date')
 
         grouped_photos = {}
-        for photo in photos:        
+        for photo in photos:
             date = photo.date.strftime('%Y.%m.%d')
-            if(date not in grouped_photos):
-                grouped_photos[date] = []        
-            serialized_photo = PhotoListSerializer(photo).data
-            grouped_photos[date].append(serialized_photo)
+            if (date not in grouped_photos):
+                grouped_photos[date] = []
+                serialized_photo = PhotoListSerializer(photo).data
+                grouped_photos[date].append(serialized_photo)
         data = [
             {
                 "date": date,

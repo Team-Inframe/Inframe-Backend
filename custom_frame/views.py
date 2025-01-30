@@ -12,7 +12,6 @@ from PIL import Image
 import time
 import logging
 import json
-import requests
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import redis
 from django_redis import get_redis_connection
@@ -46,6 +45,7 @@ rain_sticker_3 = env('rain_sticker_3')
 
 sun_sticker_1 = env('sun_sticker_1')
 sun_sticker_2 = env('sun_sticker_2')
+
 
 class CustomFrameDetailView(APIView):
     @swagger_auto_schema(
@@ -105,8 +105,8 @@ class CustomFrameDetailView(APIView):
 
             # 연관된 스티커 조회
             customFrameStickers = CustomFrameSticker.objects.filter(custom_frame=custom_frame, is_deleted=False)
-                                  
-            sticker_list = [                
+
+            sticker_list = [
                 {
                     "stickerUrl": customFrameSticker.sticker.sticker_url,
                     "positionX": customFrameSticker.position_x,
@@ -151,8 +151,10 @@ class CustomFrameDetailView(APIView):
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class CustomMyFrameDetailView(APIView):
     parser_classes = [MultiPartParser, FormParser]
+
     @swagger_auto_schema(
         operation_summary="나의 커스텀 프레임 목록 조회 API",
         operation_description="나의 커스텀 프레임 목록 조회",
@@ -177,14 +179,14 @@ class CustomMyFrameDetailView(APIView):
                                 "date": "2025-01-13",
                                 "custom_frames": [
                                     {
-                                    "custom_frame_id": 1,
-                                    "custom_frame_title": "지브리st",
-                                    "custom_frame_url": "https://example.com/frame1.png"
+                                        "custom_frame_id": 1,
+                                        "custom_frame_title": "지브리st",
+                                        "custom_frame_url": "https://example.com/frame1.png"
                                     },
                                     {
-                                    "custom_frame_id": 2,
-                                    "custom_frame_title": "귀여운st",
-                                    "custom_frame_url": "https://example.com/frame2.png"
+                                        "custom_frame_id": 2,
+                                        "custom_frame_title": "귀여운st",
+                                        "custom_frame_url": "https://example.com/frame2.png"
                                     }
                                 ]
                             },
@@ -192,9 +194,9 @@ class CustomMyFrameDetailView(APIView):
                                 "date": "2025-01-14",
                                 "custom_frames": [
                                     {
-                                    "custom_frame_id": 3,
-                                    "custom_frame_title": "힐링st",
-                                    "custom_frame_url": "https://example.com/frame3.png"
+                                        "custom_frame_id": 3,
+                                        "custom_frame_title": "힐링st",
+                                        "custom_frame_url": "https://example.com/frame3.png"
                                     }
                                 ]
                             }
@@ -212,7 +214,7 @@ class CustomMyFrameDetailView(APIView):
                     }
                 }
             ),
-        },request_body=None,
+        }, request_body=None,
     )
     def get(self, request):
         user_id = request.query_params.get("user_id")
@@ -221,28 +223,29 @@ class CustomMyFrameDetailView(APIView):
         frames = CustomFrame.objects.filter(user=user, is_deleted=False).annotate(
             date=TruncDate('created_at')
         ).order_by('-date')
-        
+
         grouped_frames = {}
-        for frame in frames:            
+        for frame in frames:
             date = frame.date.strftime('%Y.%m.%d')
             if date not in grouped_frames:
                 grouped_frames[date] = []
             serialized_frame = CustomFrameSerializer(frame).data
             grouped_frames[date].append(serialized_frame)
-        
+
         data = [
             {
                 "date": date,
                 "frames": frames
             } for date, frames in grouped_frames.items()
         ]
-                           
+
         return Response({
             "code": "STG_2001",
             "status": 200,
             "message": "나의 커스텀 프레임 목록 조회 성공",
             "data": data
         }, status=status.HTTP_200_OK)
+
 
 class MySavedFramesView(APIView):
     @swagger_auto_schema(
@@ -294,7 +297,6 @@ class MySavedFramesView(APIView):
         user = get_object_or_404(User, user_id=user_id)
 
         bookmarks = Bookmark.objects.filter(user=user, is_deleted=False).select_related('custom_frame')
-
 
         grouped_frames = {}
         for bookmark in bookmarks:
@@ -371,8 +373,6 @@ class BookmarkView(APIView):
             ),
         },
     )
-
-
     def post(self, request):
         user_id = request.data.get("user_id")
         custom_frame_id = request.data.get("custom_frame_id")
@@ -393,14 +393,14 @@ class BookmarkView(APIView):
         user = get_object_or_404(User, user_id=user_id)
         custom_frame = get_object_or_404(CustomFrame, custom_frame_id=custom_frame_id)
         logger.info(f"custom_frame_id2: {custom_frame_id}")
-        
+
         redis_key = "custom_frame_bookmarks"
-        
+
         if not Bookmark.objects.filter(user=user, custom_frame=custom_frame).exists():
             Bookmark.objects.create(user=user, custom_frame=custom_frame)
             custom_frame.bookmarks += 1
-            custom_frame.save(update_fields=['bookmarks'])            
-            redis_conn.zincrby(redis_key, 1, custom_frame_id)            
+            custom_frame.save(update_fields=['bookmarks'])
+            redis_conn.zincrby(redis_key, 1, custom_frame_id)
             return Response(
                 {
                     "code": "CSF_2001",
@@ -428,6 +428,7 @@ class BookmarkView(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
+
 
 class CustomFrameCreateView(APIView):
     parser_classes = [MultiPartParser, JSONParser]
@@ -473,8 +474,8 @@ class CustomFrameCreateView(APIView):
             elif not isinstance(is_shared, bool):
                 return Response({"code": "CSF_4004", "message": "is_shared 값이 잘못되었습니다."}, status=400)
 
-            custom_frame_img_url = request.data.get("custom_frame_img_url")
-            if not custom_frame_img_url:
+            custom_frame_img = request.data.get("custom_frame_img_url")
+            if not custom_frame_img:
                 return Response({"code": "CSF_4002", "message": "이미지가 전송되지 않았습니다."}, status=400)
 
             # 유저와 프레임 조회
@@ -489,24 +490,12 @@ class CustomFrameCreateView(APIView):
             if not frame:
                 return Response({"code": "CSF_4042", "message": "해당 프레임을 찾을 수 없습니다."}, status=404)
 
-            if custom_frame_img_url.startswith('http'):
-                file = self.download_image(custom_frame_img_url)  # 이미지를 다운로드하여 BytesIO로 처리
-                image_key = f"custom_frames/{user_id}/{custom_frame_title}_{frame_id}.png"
-                image_url = upload_file_to_s3(file, image_key)  # S3 업로드
-            else:
-                # 파일 객체로 이미 제공된 경우
-                image_key = f"custom_frames/{user_id}/{custom_frame_title}_{frame_id}.png"
-                image_url = upload_file_to_s3(custom_frame_img_url, image_key)
-
-            if not image_url:
-                return Response({"code": "CSF_5001", "message": "이미지 업로드에 실패했습니다."}, status=500)
-
-                # CustomFrame 생성
+            # CustomFrame 생성
             custom_frame = CustomFrame.objects.create(
                 user=user,
                 frame=frame,
                 custom_frame_title=custom_frame_title,
-                custom_frame_url=image_url,
+                custom_frame_url=custom_frame_img,
                 is_shared=is_shared,
             )
 
@@ -553,14 +542,6 @@ class CustomFrameCreateView(APIView):
                 {"code": "CSF_5001", "status": 500, "message": f"서버 오류: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-    def download_image(self, url):
-        """
-        이미지 URL을 다운로드하여 BytesIO 객체로 반환합니다.
-        """
-        response = requests.get(url)
-        response.raise_for_status()  # 요청 실패시 예외 발생
-        return BytesIO(response.content)
 
 
 class CustomFrameListView(APIView):
@@ -691,7 +672,6 @@ class CustomFrameListView(APIView):
             )
 
 
-
 class CustomFrameHotView(APIView):
     @swagger_auto_schema(
         operation_summary="핫한 커스텀 프레임 목록 조회",
@@ -701,26 +681,31 @@ class CustomFrameHotView(APIView):
                 description="핫한 커스텀 프레임 목록 조회",
                 examples={
                     "application/json": [
-                        {"custom_frame_id": "1", "custom_frame_title": "Frame 1", "custom_frame_url": "Frame 1", "bookmarks": 4},
-                        {"custom_frame_id": "2", "custom_frame_title": "Frame 2", "custom_frame_url": "Frame 2", "bookmarks": 3},
-                        {"custom_frame_id": "3", "custom_frame_title": "Frame 3", "custom_frame_url": "Frame 3", "bookmarks": 2},
-                        {"custom_frame_id": "4", "custom_frame_title": "Frame 4", "custom_frame_url": "Frame 4", "bookmarks": 1},
+                        {"custom_frame_id": "1", "custom_frame_title": "Frame 1", "custom_frame_url": "Frame 1",
+                         "bookmarks": 4},
+                        {"custom_frame_id": "2", "custom_frame_title": "Frame 2", "custom_frame_url": "Frame 2",
+                         "bookmarks": 3},
+                        {"custom_frame_id": "3", "custom_frame_title": "Frame 3", "custom_frame_url": "Frame 3",
+                         "bookmarks": 2},
+                        {"custom_frame_id": "4", "custom_frame_title": "Frame 4", "custom_frame_url": "Frame 4",
+                         "bookmarks": 1},
                     ]
                 }
             )
         }
     )
     def get(self, request):
-        hot_custom_frames = get_hot_custom_frames()        
+        hot_custom_frames = get_hot_custom_frames()
         return Response(hot_custom_frames)
-    
+
+
 def get_hot_custom_frames():
     data = []
-    for i in range(1,5):
-        custom_frame_data = redis_conn.hgetall(f"hot_custom_frame:{i}")        
+    for i in range(1, 5):
+        custom_frame_data = redis_conn.hgetall(f"hot_custom_frame:{i}")
         custom_frame_data = {key.decode("utf-8"): value.decode("utf-8") for key, value in custom_frame_data.items()}
         data.append(custom_frame_data)
-    return data    
+    return data
 
 
 class CustomFrameUploadAPIView(APIView):
@@ -814,14 +799,15 @@ class CustomFrameUploadAPIView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-            
+
 
 class WeatherFrameView(APIView):
     @swagger_auto_schema(
         operation_summary="날씨 프레임 조회",
         operation_description="날씨 조건에 맞는 프레임과 스티커를 조회하는 API",
         manual_parameters=[
-            openapi.Parameter('weather_condition', openapi.IN_QUERY, description="날씨 조건 (예: Clear, Rain, Snow 등)", type=openapi.TYPE_STRING),
+            openapi.Parameter('weather_condition', openapi.IN_QUERY, description="날씨 조건 (예: Clear, Rain, Snow 등)",
+                              type=openapi.TYPE_STRING),
         ],
         responses={
             200: openapi.Response(
@@ -850,24 +836,24 @@ class WeatherFrameView(APIView):
     )
     def get(self, request):
         weather_condition = request.GET.get('weather_condition')
-        
-        custom_frame_data = self.get_custom_frame_data(weather_condition)        
-        
+
+        custom_frame_data = self.get_custom_frame_data(weather_condition)
+
         return Response(
-                {
-                    "code": "WEA_2001",
-                    "status": 200,
-                    "message": "날씨 프레임 목록 조회 성공",
-                    "data": custom_frame_data,
-                },
-                status=status.HTTP_200_OK,
-            )
-    
+            {
+                "code": "WEA_2001",
+                "status": 200,
+                "message": "날씨 프레임 목록 조회 성공",
+                "data": custom_frame_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
     def get_custom_frame_data(self, weather_condition):
         if weather_condition in ['Thunderstorm', 'Rain', 'Drizzle']:
             custom_frame_img = rain_frame
             stickers = self.get_stickers_for_rain()
-            
+
         elif weather_condition == 'Snow':
             custom_frame_img = snow_frame
             stickers = self.get_stickers_for_snow()
@@ -881,8 +867,8 @@ class WeatherFrameView(APIView):
                 "customFrameImg": custom_frame_img,
                 "stickers": stickers
             }
-        return None     
-              
+        return None
+
     def get_stickers_for_rain(self):
         return [
             {
@@ -898,14 +884,14 @@ class WeatherFrameView(APIView):
                 "sticker_y": 200,
                 "sticker_width": 200,
                 "sticker_height": 200
-            },  
+            },
             {
                 "sticker_img_url": rain_sticker_3,
                 "sticker_x": 300,
                 "sticker_y": 300,
                 "sticker_width": 300,
                 "sticker_height": 300
-            },       
+            },
         ]
 
     def get_stickers_for_snow(self):
@@ -923,14 +909,14 @@ class WeatherFrameView(APIView):
                 "sticker_y": 200,
                 "sticker_width": 200,
                 "sticker_height": 200
-            },  
+            },
             {
                 "sticker_img_url": snow_sticker_3,
                 "sticker_x": 300,
                 "sticker_y": 300,
                 "sticker_width": 300,
                 "sticker_height": 300
-            },             
+            },
         ]
 
     def get_stickers_for_clear(self):

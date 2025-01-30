@@ -2,8 +2,6 @@ import time
 from datetime import datetime
 from io import BytesIO
 import random
-
-import boto3
 from deep_translator import GoogleTranslator
 from openai import OpenAI
 client = OpenAI()
@@ -27,18 +25,6 @@ from .serializers import CreateFrameImgSerializer
 
 logger = logging.getLogger("inframe")
 
-
-from io import BytesIO
-import time
-from PIL import Image
-import boto3
-from django.conf import settings
-from django.core.files.storage import default_storage
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework import status
-from .models import Frame
-from .utils import upload_file_to_s3  # 기존에 정의한 S3 업로드 함수
 
 class CreateFrameView(APIView):
     # MultiPartParser를 통해 파일 업로드를 처리
@@ -121,8 +107,7 @@ class CreateFrameView(APIView):
             )
 
         try:
-            # 배경 이미지 처리
-            if isinstance(frame_bg, str) and (frame_bg.startswith("http") or frame_bg.startswith("BG")):
+            if frame_bg.startswith("http" or "BG"):
                 frame_bg = frame_bg
             else:
                 frame_bg_file = request.FILES.get("frame_bg")
@@ -165,7 +150,6 @@ class CreateFrameView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-            # 프레임 이미지 처리
             frame_image_data = frame_url_file.read()
             frame_img = Image.open(BytesIO(frame_image_data))
 
@@ -195,7 +179,6 @@ class CreateFrameView(APIView):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
-            # 프레임 생성
             frame = Frame.objects.create(
                 frame_url=frame_url,
                 frame_bg=frame_bg,
@@ -308,35 +291,15 @@ class CreateAiFrameView(APIView):
         return BytesIO(response.content)
 
     def upload_to_s3(self, image, file_name):
-        """
-        S3에 파일을 업로드하고 절대 URL을 반환하는 함수.
-        """
-        s3_client = boto3.client(
-            "s3",
-            region_name=settings.STORAGES["default"]["OPTIONS"]["region_name"],
-            aws_access_key_id=settings.STORAGES["default"]["OPTIONS"]["access_key"],
-            aws_secret_access_key=settings.STORAGES["default"]["OPTIONS"]["secret_key"],
-        )
-
-        s3_bucket = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
-
-        if isinstance(image, BytesIO):
-            image.seek(0)
-
-        try:
-            s3_client.upload_fileobj(image, s3_bucket, file_name)
-
-            # S3 절대 URL 생성
-            region = settings.STORAGES["default"]["OPTIONS"]["region_name"]
-            url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{file_name}"
-            return url
-
-        except Exception as e:
-            raise Exception(f"S3 업로드 오류: {str(e)}")
+        from django.core.files.storage import default_storage
+        file_path = default_storage.save(file_name, image)
+        return default_storage.url(file_path)
 
     def example_view(self, prompt):
         # 랜덤 숫자 생성 (1, 2, 3 중 하나)
         i = random.randint(1, 3)
+
+        # 영어 프롬프트가 "dog"이면 메시지 생성
 
         # 랜덤 값에 따른 메시지 생성
         if i == 1:
@@ -349,6 +312,7 @@ class CreateAiFrameView(APIView):
             message = "white."
 
         return message
+
 
 class FrameDetailView(APIView):
     @swagger_auto_schema(
