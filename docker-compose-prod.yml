@@ -47,7 +47,7 @@ services:
     container_name: backend
     volumes:
       - static_volume:/Inframe-Backend/static
-    image: inframe2/hyeonho2:1.1.20250130201345
+    image: inframe2/hyeonho2:1.1.20250130203351
     env_file:
       - .env
     ports:
