@@ -107,49 +107,58 @@ class CreateFrameView(APIView):
             )
 
         try:
-            if frame_bg.startswith("http" or "BG"):
-                frame_bg = frame_bg
-            else:
-                frame_bg_file = request.FILES.get("frame_bg")
-                if frame_bg_file:
-                    bg_image_data = frame_bg_file.read()
-                    bg_img = Image.open(BytesIO(bg_image_data))
+            if isinstance(frame_bg, str):
+                if frame_bg.startswith("http") or frame_bg.startswith("BG"):
+                    # "BG"로 시작하는 경우 그대로 사용
+                    logger.info(f"frame_bg는 BG 코드 또는 URL입니다: {frame_bg}")
+                    frame_bg = frame_bg
+                elif frame_bg.startswith("#"):
+                    # 색상 코드 처리
+                    logger.info(f"frame_bg는 색상 코드입니다: {frame_bg}")
+                    frame_bg = frame_bg
+                else:
+                    # 배경 이미지 파일인 경우 처리
+                    frame_bg_file = request.FILES.get("frame_bg")
+                    if frame_bg_file:
+                        bg_image_data = frame_bg_file.read()
+                        bg_img = Image.open(BytesIO(bg_image_data))
 
-                    if bg_img.mode == 'RGBA':
-                        bg_img = bg_img.convert('RGB')
+                        if bg_img.mode == 'RGBA':
+                            bg_img = bg_img.convert('RGB')
 
-                    bg_filename = f"bg_{int(time.time())}.jpg"
-                    bg_img_file = BytesIO()
-                    bg_img.save(bg_img_file, format="JPEG")
-                    bg_img_file.seek(0)
+                        bg_filename = f"bg_{int(time.time())}.jpg"
+                        bg_img_file = BytesIO()
+                        bg_img.save(bg_img_file, format="JPEG")
+                        bg_img_file.seek(0)
 
-                    frame_bg = upload_file_to_s3(
-                        file=bg_img_file,
-                        key=f"background-frames/{bg_filename}",
-                        ExtraArgs={
-                            "ContentType": "image/jpeg",
-                            "ACL": "public-read",
-                        },
-                    )
-                    if not frame_bg:
+                        frame_bg = upload_file_to_s3(
+                            file=bg_img_file,
+                            key=f"background-frames/{bg_filename}",
+                            ExtraArgs={
+                                "ContentType": "image/jpeg",
+                                "ACL": "public-read",
+                            },
+                        )
+                        if not frame_bg:
+                            return Response(
+                                {
+                                    "code": "FRA_5001",
+                                    "status": 500,
+                                    "message": "배경 이미지 업로드 실패",
+                                },
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            )
+                    else:
                         return Response(
                             {
-                                "code": "FRA_5001",
-                                "status": 500,
-                                "message": "배경 이미지 업로드 실패",
+                                "code": "FRA_4003",
+                                "status": 400,
+                                "message": "frame_bg가 파일도 URL도 아님",
                             },
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            status=status.HTTP_400_BAD_REQUEST,
                         )
-                else:
-                    return Response(
-                        {
-                            "code": "FRA_4003",
-                            "status": 400,
-                            "message": "frame_bg가 파일도 URL도 아님",
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
 
+                # 프레임 이미지 처리
             frame_image_data = frame_url_file.read()
             frame_img = Image.open(BytesIO(frame_image_data))
 
@@ -205,7 +214,6 @@ class CreateFrameView(APIView):
                 "message": f"프레임 생성 실패: {str(e)}",
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 class CreateAiFrameView(APIView):
     @swagger_auto_schema(
         operation_summary="초기 프레임 배경 생성 API",
