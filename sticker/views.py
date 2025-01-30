@@ -33,6 +33,7 @@ REMOVE_BG_API_KEY = os.getenv('REMOVE_BG_API_KEY')
 
 class StickerView(APIView):
     parser_classes = [MultiPartParser, FormParser]
+
     @swagger_auto_schema(
         operation_summary="스티커 생성 API",
         operation_description="스티커 생성 페이지",
@@ -54,7 +55,7 @@ class StickerView(APIView):
             openapi.Parameter(
                 name="uploaded_image",
                 in_=openapi.IN_FORM,
-                description="스티커를 생성할 업로드된 이미지",
+                description="스티커를 생성할 업로드된 이미지 URL",
                 type=openapi.TYPE_STRING,
                 required=False,
             ),
@@ -101,9 +102,9 @@ class StickerView(APIView):
 
         validated_data = serializer.validated_data
         prompt = validated_data.get('prompt')
-        uploaded_image = validated_data.get('uploaded_image')
+        uploaded_image_url = validated_data.get('uploaded_image')
 
-        if bool(prompt) == bool(uploaded_image):
+        if bool(prompt) == bool(uploaded_image_url):
             return Response({
                 "code": "STK_4001",
                 "status": 400,
@@ -130,8 +131,9 @@ class StickerView(APIView):
 
             sticker_url = self.upload_to_s3(bg_removed_image, file_name)
 
-        elif uploaded_image:
-            bg_removed_image = self.remove_background_with_api(uploaded_image)
+        elif uploaded_image_url:
+            image = self.download_image(uploaded_image_url)
+            bg_removed_image = self.remove_background_with_api(image)
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             file_name = f"stickers/sticker_{timestamp}.png"
             sticker_url = self.upload_to_s3(bg_removed_image, file_name)
@@ -139,7 +141,7 @@ class StickerView(APIView):
             return Response({
                 "code": "STK_4001",
                 "status": 400,
-                "message": "텍스트 또는 S3 URL을 제공해주세요.",
+                "message": "텍스트 또는 이미지 URL을 제공해주세요.",
             }, status=status.HTTP_400_BAD_REQUEST)
 
         sticker = Sticker.objects.create(
@@ -157,12 +159,13 @@ class StickerView(APIView):
             },
         }, status=status.HTTP_201_CREATED)
 
-    def remove_background_with_api(self, image_url):
+    def remove_background_with_api(self, image):
         url = env('REMOVE_BG_API_URL')
         headers = {"X-Api-Key": REMOVE_BG_API_KEY}
-        payload = {"image_url": image_url}
 
-        response = requests.post(url, headers=headers, data=payload)
+        image_file = BytesIO(image.read())
+        files = {"image_file": ("input.png", image_file, "image/png")}
+        response = requests.post(url, headers=headers, files=files)
 
         if response.status_code != 200:
             raise Exception(f"Failed to remove background: {response.status_code} - {response.text}")
@@ -178,31 +181,6 @@ class StickerView(APIView):
         response = requests.get(url)
         response.raise_for_status()
         return BytesIO(response.content)
-
-    def remove_background_with_api(self, image_url):
-        url = env('REMOVE_BG_API_URL')
-
-        headers = {"X-Api-Key": REMOVE_BG_API_KEY}
-
-        response = requests.get(image_url, stream=True)
-        if response.status_code != 200:
-            raise Exception(f"Failed to download image from S3: {response.status_code}")
-        image = BytesIO(response.content)
-        image.seek(0)
-
-        files = {"image_file": ("input.png", image, "image/png")}
-        response = requests.post(url, headers=headers, files=files)
-
-        if response.status_code != 200:
-            raise Exception(f"Failed to remove background: {response.status_code} - {response.text}")
-
-        return ContentFile(response.content, name="bg_removed.png")
-
-    def upload_to_s3(self, image, file_name):
-        from django.core.files.storage import default_storage
-        file_path = default_storage.save(file_name, image)
-        return default_storage.url(file_path)
-
 
 class StickerListView(APIView):
     @swagger_auto_schema(
