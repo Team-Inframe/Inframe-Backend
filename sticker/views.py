@@ -187,7 +187,6 @@ class StickerView(APIView):
         return default_storage.url(file_path)
 
 
-
 class StickerListView(APIView):
     @swagger_auto_schema(
         operation_summary="사용자별 스티커 목록 조회 API",
@@ -202,30 +201,26 @@ class StickerListView(APIView):
             ),
         ],
         responses={
-            201: openapi.Response(
+            200: openapi.Response(
                 description="스티커 조회 완료",
                 examples={
                     "application/json": {
                         "code": "STK_2001",
-                        "status": 201,
-                        "message": "스티커 조회 완료",
+                        "status": 200,
+                        "message": "스티커 목록 조회 성공",
                         "data": [
-                          {
-                            "sticker": [
-                              {
-                                "sticker_id": 0,
-                                "stickerUrl": "https://example.com/stickers/generated_sticker.png",
-                              },
-                              {
-                                "sticker_id": 0,
-                                "stickerUrl": "https://example.com/stickers/generated_sticker.png",
-                              },
-                            ],
-                          },
+                            {
+                                "sticker_id": 1,
+                                "sticker_url": "https://example.com/stickers/sticker_1.png",
+                            },
+                            {
+                                "sticker_id": 2,
+                                "sticker_url": "https://example.com/stickers/sticker_2.png",
+                            },
                         ],
-                      }
                     }
-                ),
+                },
+            ),
             400: openapi.Response(
                 description="유효하지 않은 데이터입니다.",
                 examples={
@@ -242,37 +237,15 @@ class StickerListView(APIView):
         user_id = request.query_params.get("user_id")
         user = get_object_or_404(User, user_id=user_id)
 
-        # 스티커 데이터 조회
         stickers = (
             Sticker.objects.filter(user=user, is_deleted=False)
-            .annotate(date=TruncDate('created_at'))  # 날짜 필드 추가
-            .values("sticker_id", "sticker_url", "date")  # 필요한 필드만 가져오기
+            .values("sticker_id", "sticker_url", "created_at")
+            .order_by("-created_at")
         )
-
-        # 날짜별로 그룹화
-        grouped_frames = defaultdict(list)
-        for sticker in stickers:
-            date = sticker["date"].strftime('%Y.%m.%d')  # 날짜 형식 변환
-            grouped_frames[date].append({
-                "sticker_id": sticker["sticker_id"],
-                "sticker_url": sticker["sticker_url"]
-            })
-
-        # 최신순 정렬
-        sorted_grouped_frames = sorted(grouped_frames.items(), key=lambda x: x[0], reverse=True)
-
-        # 최종 데이터 구조화
-        data = [
-            {
-                "date": date,
-                "stickers": stickers
-            } for date, stickers in sorted_grouped_frames
-        ]
 
         return Response({
             "code": "STK_2001",
             "status": 200,
             "message": "스티커 목록 조회 성공",
-            "data": data
+            "data": list(stickers)
         }, status=status.HTTP_200_OK)
-
