@@ -125,6 +125,7 @@ class CreatePhotoView(APIView):
         file_path = default_storage.save(file_name, ContentFile(image.read()))
         return default_storage.url(file_path)
 
+
 class PhotoListView(APIView):
     @swagger_auto_schema(
         operation_summary="갤러리 목록 조회 API",
@@ -183,6 +184,40 @@ class PhotoListView(APIView):
             ),
         },
     )
+    def get(self, request):
+        user_id = request.query_params.get("user_id")
+        user = get_object_or_404(User, user_id=user_id)
+
+        photos = Photo.objects.filter(user=user, is_deleted=False).annotate(
+            date=TruncDate('created_at')
+        ).order_by('-date')
+
+        grouped_photos = {}
+
+        for photo in photos:
+            date = photo.date.strftime('%Y.%m.%d')
+            if date not in grouped_photos:
+                grouped_photos[date] = []
+
+            # 시리얼라이즈된 데이터를 추가
+            serialized_photo = PhotoListSerializer(photo).data
+            grouped_photos[date].append(serialized_photo)
+
+        # 날짜별로 그룹화된 데이터를 리스트로 변환
+        data = [
+            {
+                "date": date,
+                "photos": photos
+            } for date, photos in grouped_photos.items()
+        ]
+
+        return Response({
+            "code": "PHO_2001",
+            "status": 200,
+            "message": "사진 목록 조회 성공",
+            "data": data
+        }, status=status.HTTP_200_OK)
+
     def get(self, request):
         user_id = request.query_params.get("user_id")
         user = get_object_or_404(User, user_id=user_id)
