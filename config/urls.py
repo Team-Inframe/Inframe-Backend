@@ -29,11 +29,11 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('', include('django_prometheus.urls')),
     path("api/v1/", include([
-        path('stickers/', include('sticker.urls')),
-        path('users/', include('user.urls')),
-        path('frames/', include('frame.urls')),
-        path('custom-frames/', include('custom_frame.urls')),
-        path('photos/', include('photo.urls')),
+        path('stickers', include('sticker.urls')),
+        path('users', include('user.urls')),
+        path('frames', include('frame.urls')),
+        path('custom-frames', include('custom_frame.urls')),
+        path('photos', include('photo.urls')),
 
     ])),
 ]
