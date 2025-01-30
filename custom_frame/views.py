@@ -12,6 +12,7 @@ from PIL import Image
 import time
 import logging
 import json
+import requests
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import redis
 from django_redis import get_redis_connection
@@ -472,8 +473,8 @@ class CustomFrameCreateView(APIView):
             elif not isinstance(is_shared, bool):
                 return Response({"code": "CSF_4004", "message": "is_shared 값이 잘못되었습니다."}, status=400)
 
-            custom_frame_img = request.data.get("custom_frame_img_url")
-            if not custom_frame_img:
+            custom_frame_img_url = request.data.get("custom_frame_img_url")
+            if not custom_frame_img_url:
                 return Response({"code": "CSF_4002", "message": "이미지가 전송되지 않았습니다."}, status=400)
 
             # 유저와 프레임 조회
@@ -488,18 +489,24 @@ class CustomFrameCreateView(APIView):
             if not frame:
                 return Response({"code": "CSF_4042", "message": "해당 프레임을 찾을 수 없습니다."}, status=404)
 
-            image_key = f"custom_frames/{user_id}/{custom_frame_title}_{frame_id}.png"
-            image_url = upload_file_to_s3(custom_frame_img, image_key)
+            if custom_frame_img_url.startswith('http'):
+                file = self.download_image(custom_frame_img_url)  # 이미지를 다운로드하여 BytesIO로 처리
+                image_key = f"custom_frames/{user_id}/{custom_frame_title}_{frame_id}.png"
+                image_url = upload_file_to_s3(file, image_key)  # S3 업로드
+            else:
+                # 파일 객체로 이미 제공된 경우
+                image_key = f"custom_frames/{user_id}/{custom_frame_title}_{frame_id}.png"
+                image_url = upload_file_to_s3(custom_frame_img_url, image_key)
 
             if not image_url:
                 return Response({"code": "CSF_5001", "message": "이미지 업로드에 실패했습니다."}, status=500)
 
-            # CustomFrame 생성
+                # CustomFrame 생성
             custom_frame = CustomFrame.objects.create(
                 user=user,
                 frame=frame,
                 custom_frame_title=custom_frame_title,
-                custom_frame_url=custom_frame_img,
+                custom_frame_url=image_url,
                 is_shared=is_shared,
             )
 
@@ -546,6 +553,14 @@ class CustomFrameCreateView(APIView):
                 {"code": "CSF_5001", "status": 500, "message": f"서버 오류: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    def download_image(self, url):
+        """
+        이미지 URL을 다운로드하여 BytesIO 객체로 반환합니다.
+        """
+        response = requests.get(url)
+        response.raise_for_status()  # 요청 실패시 예외 발생
+        return BytesIO(response.content)
 
 
 class CustomFrameListView(APIView):

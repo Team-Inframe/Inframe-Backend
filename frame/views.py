@@ -28,6 +28,18 @@ from .serializers import CreateFrameImgSerializer
 logger = logging.getLogger("inframe")
 
 
+from io import BytesIO
+import time
+from PIL import Image
+import boto3
+from django.conf import settings
+from django.core.files.storage import default_storage
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from .models import Frame
+from .utils import upload_file_to_s3  # 기존에 정의한 S3 업로드 함수
+
 class CreateFrameView(APIView):
     # MultiPartParser를 통해 파일 업로드를 처리
     parser_classes = [MultiPartParser]
@@ -109,6 +121,7 @@ class CreateFrameView(APIView):
             )
 
         try:
+            # 배경 이미지 처리
             if isinstance(frame_bg, str) and (frame_bg.startswith("http") or frame_bg.startswith("BG")):
                 frame_bg = frame_bg
             else:
@@ -152,6 +165,7 @@ class CreateFrameView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
+            # 프레임 이미지 처리
             frame_image_data = frame_url_file.read()
             frame_img = Image.open(BytesIO(frame_image_data))
 
@@ -181,6 +195,7 @@ class CreateFrameView(APIView):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
+            # 프레임 생성
             frame = Frame.objects.create(
                 frame_url=frame_url,
                 frame_bg=frame_bg,
@@ -304,6 +319,9 @@ class CreateAiFrameView(APIView):
         )
 
         s3_bucket = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
+
+        if isinstance(image, BytesIO):
+            image.seek(0)
 
         try:
             s3_client.upload_fileobj(image, s3_bucket, file_name)

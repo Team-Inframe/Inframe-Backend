@@ -131,15 +131,21 @@ class CreatePhotoView(APIView):
 
         s3_bucket = settings.STORAGES["default"]["OPTIONS"]["bucket_name"]
 
+        if not isinstance(image, BytesIO):
+            image = BytesIO(image.read())  # 파일 객체를 BytesIO로 변환
+
         try:
+            # S3에 파일 업로드
             s3_client.upload_fileobj(image, s3_bucket, file_name)
 
+            # S3 절대 URL 생성
             region = settings.STORAGES["default"]["OPTIONS"]["region_name"]
             url = f"https://{s3_bucket}.s3.{region}.amazonaws.com/{file_name}"
             return url
 
         except Exception as e:
             raise Exception(f"S3 업로드 오류: {str(e)}")
+
 class PhotoListView(APIView):
     @swagger_auto_schema(
         operation_summary="갤러리 목록 조회 API",
