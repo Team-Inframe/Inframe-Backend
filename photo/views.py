@@ -35,7 +35,14 @@ class CreatePhotoView(APIView):
                 description="업로드할 사진 파일",
                 type=openapi.TYPE_FILE,
                 required=True,
-            )
+            ),
+            openapi.Parameter(
+                name="location",
+                in_=openapi.IN_FORM,
+                description="사진이 촬영된 장소",
+                type=openapi.TYPE_STRING,
+                required=False,
+            ),
         ],
         responses={
             201: openapi.Response(
@@ -45,7 +52,8 @@ class CreatePhotoView(APIView):
                         "code": "PHO_2011",
                         "message": "최종 사진 생성에 성공했습니다.",
                         "photoId": 1,
-                        "photoUrl": "https://example-bucket.s3.amazonaws.com/example.jpg"
+                        "photoUrl": "https://example-bucket.s3.amazonaws.com/example.jpg",
+                        "location": "서울특별시 강남구"
                     }
                 }
             ),
@@ -63,6 +71,7 @@ class CreatePhotoView(APIView):
 
     def post(self, request):
         user_id = request.data.get("user_id")
+        location = request.data.get("location", None)
         user = get_object_or_404(User, user_id=user_id)
 
         serializer = CreatePhotoSerializer(data=request.data)
@@ -95,7 +104,8 @@ class CreatePhotoView(APIView):
 
         photo = Photo.objects.create(
             user_id=user.user_id,
-            photo_url=s3_url
+            photo_url=s3_url,
+            location = location
         )
 
         return Response({
@@ -103,7 +113,8 @@ class CreatePhotoView(APIView):
             "status": 201,
             "message": "최종 사진 생성에 성공했습니다.",
             "photo_id": photo.photo_id,
-            "photo_url": photo.photo_url
+            "photo_url": photo.photo_url,
+            "location": photo.location
         }, status=status.HTTP_201_CREATED)
 
     def upload_to_s3(self, image, file_name):
@@ -214,7 +225,9 @@ class PhotoSingleView(APIView):
                         "data": openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
+                                "photo_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="최종 사진 ID"),
                                 "photo_url": openapi.Schema(type=openapi.TYPE_STRING, description="최종 사진 URL"),
+                                "location": openapi.Schema(type=openapi.TYPE_STRING, description="사진이 촬영된 장소"),
                             },
                         ),
                     },
@@ -244,6 +257,7 @@ class PhotoSingleView(APIView):
                 "data": {
                     "photo_id" : photo.photo_id,
                     "photo_url": photo.photo_url,
+                    "location": photo.location,
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)

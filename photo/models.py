@@ -5,6 +5,7 @@ class Photo(models.Model):
     photo_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     photo_url = models.CharField(max_length=1000)
+    location = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
     class Meta:
