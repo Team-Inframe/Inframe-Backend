@@ -107,7 +107,7 @@ class CreateFrameView(APIView):
             )
 
         try:
-            if frame_bg.startswith("http" or "BG"):
+            if isinstance(frame_bg, str) and (frame_bg.startswith("http") or frame_bg.startswith("BG")):
                 frame_bg = frame_bg
             else:
                 frame_bg_file = request.FILES.get("frame_bg")

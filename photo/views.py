@@ -228,6 +228,7 @@ class PhotoSingleView(APIView):
                                 "photo_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="최종 사진 ID"),
                                 "photo_url": openapi.Schema(type=openapi.TYPE_STRING, description="최종 사진 URL"),
                                 "location": openapi.Schema(type=openapi.TYPE_STRING, description="사진이 촬영된 장소"),
+                                "created_at": openapi.Schema(type=openapi.TYPE_STRING, format="date-time", description="사진이 촬영된 날짜 및 시간"),
                             },
                         ),
                     },
@@ -258,6 +259,7 @@ class PhotoSingleView(APIView):
                     "photo_id" : photo.photo_id,
                     "photo_url": photo.photo_url,
                     "location": photo.location,
+                    "created_at": photo.created_at.strftime('%Y-%m-%d %H:%M:%S') if photo.created_at else "날짜 정보 없음"
                 },
             }
             return Response(response_data, status=status.HTTP_200_OK)
