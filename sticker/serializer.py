@@ -4,7 +4,7 @@ from sticker.models import Sticker
 
 class CreateStickerSerializer(serializers.ModelSerializer):
     prompt = serializers.CharField(required=False, allow_blank=True)
-    uploaded_image = serializers.FileField(required=False)
+    uploaded_image = serializers.CharField(required=False, allow_blank=True)
     sticker_url = serializers.CharField(read_only=True)
     class Meta:
         model = Sticker
