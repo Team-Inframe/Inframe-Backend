@@ -186,20 +186,24 @@ class PhotoListView(APIView):
     )
     def get(self, request):
         user_id = request.query_params.get("user_id")
+
+        # 사용자 조회
         user = get_object_or_404(User, user_id=user_id)
 
+        # 삭제되지 않은 사진만 필터링하고 날짜별로 그룹화
         photos = Photo.objects.filter(user=user, is_deleted=False).annotate(
-            date=TruncDate('created_at')
-        ).order_by('-date')
+            date=TruncDate('created_at')  # 날짜별로 그룹화
+        ).order_by('-date')  # 최근 날짜 순으로 정렬
 
         grouped_photos = {}
 
+        # 날짜별로 사진 그룹화
         for photo in photos:
-            date = photo.date.strftime('%Y.%m.%d')
+            date = photo.date.strftime('%Y.%m.%d')  # 날짜 포맷
             if date not in grouped_photos:
                 grouped_photos[date] = []
 
-            # 시리얼라이즈된 데이터를 추가
+            # 시리얼라이저를 통해 사진 데이터 추가
             serialized_photo = PhotoListSerializer(photo).data
             grouped_photos[date].append(serialized_photo)
 
@@ -211,6 +215,7 @@ class PhotoListView(APIView):
             } for date, photos in grouped_photos.items()
         ]
 
+        # 성공적으로 응답 반환
         return Response({
             "code": "PHO_2001",
             "status": 200,
@@ -218,34 +223,6 @@ class PhotoListView(APIView):
             "data": data
         }, status=status.HTTP_200_OK)
 
-    def get(self, request):
-        user_id = request.query_params.get("user_id")
-        user = get_object_or_404(User, user_id=user_id)
-
-        photos = Photo.objects.filter(user=user, is_deleted=False).annotate(
-            date=TruncDate('created_at')
-        ).order_by('-date')
-
-        grouped_photos = {}
-        for photo in photos:
-            date = photo.date.strftime('%Y.%m.%d')
-            if (date not in grouped_photos):
-                grouped_photos[date] = []
-                serialized_photo = PhotoListSerializer(photo).data
-                grouped_photos[date].append(serialized_photo)
-        data = [
-            {
-                "date": date,
-                "photos": photos
-            } for date, photos in grouped_photos.items()
-        ]
-
-        return Response({
-            "code": "PHO_2001",
-            "status": 200,
-            "message": "사진 목록 조회 성공",
-            "data": data
-        }, status=status.HTTP_200_OK)
 class PhotoSingleView(APIView):
     @swagger_auto_schema(
         operation_summary="최종 사진 조회 API",
